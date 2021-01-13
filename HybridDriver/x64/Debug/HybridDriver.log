@@ -1,0 +1,8 @@
+﻿  BodyTracking.cpp
+  HybridDriver.cpp
+C:\Users\Thomas\Documents\ProjetVR\Kinect\HybridDriver\HybridDriver\HybridDriver.cpp(226,16): warning C4101: 'z' : variable locale non référencée
+C:\Users\Thomas\Documents\ProjetVR\Kinect\HybridDriver\HybridDriver\HybridDriver.cpp(226,13): warning C4101: 'y' : variable locale non référencée
+C:\Users\Thomas\Documents\ProjetVR\Kinect\HybridDriver\HybridDriver\HybridDriver.cpp(226,10): warning C4101: 'x' : variable locale non référencée
+  Génération de code en cours...
+     Création de la bibliothèque C:\Users\Thomas\Documents\ProjetVR\Kinect\HybridDriver\x64\Debug\HybridDriver.lib et de l'objet C:\Users\Thomas\Documents\ProjetVR\Kinect\HybridDriver\x64\Debug\HybridDriver.exp
+  HybridDriver.vcxproj -> C:\Users\Thomas\Documents\ProjetVR\Kinect\HybridDriver\x64\Debug\HybridDriver.dll

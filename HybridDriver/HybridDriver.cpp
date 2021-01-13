@@ -14,6 +14,8 @@
 #include "BodyTracking.h"
 #include "Bridge.h"
 
+#include "HandTracking.h"
+
 using namespace vr;
 
 
@@ -285,6 +287,17 @@ public:
 			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_unObjectId, GetPose(), sizeof(DriverPose_t));
 		}
 
+		if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) {
+			int handNumber = 0;
+			GestureResult* hands = getHandTrackingData(&handNumber);
+			for (int i = 0; i < handNumber; i++) {
+				if (hands[i].isLeft && m_type != TrackerType::LeftHand) continue;
+				if (!hands[i].isLeft && m_type != TrackerType::RightHand) continue;
+				// Do something
+			}
+
+		}
+
 		/* TODO: Update skeleton components */
 #endif
 	}
@@ -299,6 +312,7 @@ public:
 			{
 				// This is where you would send a signal to your hardware to trigger actual haptic feedback
 				DriverLog( "BUZZ!\n" );
+
 			}
 		}
 		break;
@@ -341,6 +355,7 @@ public:
 
 private:
 	std::vector<CSampleControllerDriver*> m_pTrackers;
+	bool m_handtrackingStarted = false;
 };
 
 CServerDriver_Sample g_serverDriverNull;
@@ -358,7 +373,7 @@ EVRInitError CServerDriver_Sample::Init( vr::IVRDriverContext *pDriverContext )
 
 	for (int i = 0; i < N_TRACKERS; i++) {
 		CSampleControllerDriver* tracker = new CSampleControllerDriver();
-		tracker->SetControllerType(TrackerType::Waist); // TODO: Add 1 of each type
+		tracker->SetControllerType(TrackerType::RightHand); // TODO: Add 1 of each type
 
 		vr::VRServerDriverHost()->TrackedDeviceAdded(tracker->GetSerialNumber().c_str(), vr::TrackedDeviceClass_GenericTracker, tracker);
 		m_pTrackers.push_back(tracker);
@@ -381,6 +396,14 @@ void CServerDriver_Sample::Cleanup()
 
 void CServerDriver_Sample::RunFrame()
 {
+	if (!m_handtrackingStarted) {
+		DriverLog("Initializing Camera Module of HandTracking");
+
+		initHandTracking();
+
+		m_handtrackingStarted = true;
+	}
+
 	for (auto it = std::begin(m_pTrackers); it != std::end(m_pTrackers); ++it) {
 		(*it)->RunFrame();
 	}

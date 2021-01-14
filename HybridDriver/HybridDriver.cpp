@@ -56,7 +56,7 @@ inline void HmdMatrix_SetIdentity( HmdMatrix34_t *pMatrix )
 }
 
 CBodyTracking g_bodyTracking;
-
+CHandTracking g_handTracking;
 // keys for use with the settings API
 static const char * const k_pch_Sample_Section = "driver_sample";
 static const char * const k_pch_Sample_SerialNumber_String = "serialNumber";
@@ -289,20 +289,16 @@ public:
 		}
 
 		if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) {
-			if (m_handtrackingStarted)
+			if (g_handTracking.getState() == HandTrackingState::Initialized && g_handTracking.isDataAvailable())
 			{
 				int handNumber = 0;
-				GestureResult* hands = getHandTrackingData(&handNumber);
+				GestureResult* hands = g_handTracking.getHandTrackingData(&handNumber);
 				for (int i = 0; i < handNumber; i++) {
 					if (hands[i].isLeft && m_type != TrackerType::LeftHand) continue;
 					if (!hands[i].isLeft && m_type != TrackerType::RightHand) continue;
+					DriverLog("Detected %s hand", hands[i].isLeft ? "left" : "right");
 					// TODO: Do something
 				}
-			}
-			else {
-				DriverLog("Initializing Camera Module of HandTracking");
-				initHandTracking();
-				m_handtrackingStarted = true;
 			}
 		}
 
@@ -404,6 +400,7 @@ void CServerDriver_Sample::Cleanup()
 
 void CServerDriver_Sample::RunFrame()
 {
+	if (g_handTracking.getState() == HandTrackingState::Unitialized) g_handTracking.InitializeDefaultSensor();
 	for (auto it = std::begin(m_pTrackers); it != std::end(m_pTrackers); ++it) {
 		(*it)->RunFrame();
 	}

@@ -5,6 +5,12 @@
 
 #include "HandTracking.h"
 
+
+double clockToMilliseconds(clock_t ticks) {
+	// units/(units/time) => time (seconds) * 1000 = milliseconds
+	return (ticks / (double)CLOCKS_PER_SEC) * 1000.0;
+}
+
 CHandTracking::CHandTracking() :
 m_isDataAvailable(false),
 m_handCount(0),
@@ -28,6 +34,8 @@ void CHandTracking::InitializeDefaultSensor() {
 
 void CHandTracking::initialize() {
 	GestureOption option;
+	option.mode = GestureMode3DPoint;
+	UseExternalTransform(true);
 	GestureFailure result = StartGestureDetection(&option);
 	if (result != GestureFailureNone) {
 		DriverLog("Initilization of HandTracking failed");
@@ -68,6 +76,8 @@ void CHandTracking::updateHandTracking() {
 
 		if (m_handCount > 0) m_isDataAvailable = true;
 		lastFrameIndex = frameIndex;
+		
+
 
 	}
 }

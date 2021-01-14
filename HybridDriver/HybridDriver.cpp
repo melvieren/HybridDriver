@@ -198,9 +198,58 @@ public:
 		return m_calibrationDone;
 	}
 
+	DriverPose_t GetHandPose() {
+		DriverPose_t pose = { 0 };
+
+		pose.poseIsValid = true;
+		pose.result = TrackingResult_Running_OK;
+		pose.deviceIsConnected = true;
+
+		pose.qWorldFromDriverRotation = HmdQuaternion_Init(1, 0, 0, 0);
+		pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
+
+		switch (m_type) {
+		case TrackerType::LeftHand:
+			pose.vecPosition[0] = static_cast<double>(m_leftHand[0]);
+			pose.vecPosition[1] = static_cast<double>(m_leftHand[1]);
+			pose.vecPosition[2] = static_cast<double>(m_leftHand[2]);
+			break;
+		case TrackerType::RightHand:
+			pose.vecPosition[0] = static_cast<double>(m_rightHand[0]);
+			pose.vecPosition[1] = static_cast<double>(m_rightHand[1]);
+			pose.vecPosition[2] = static_cast<double>(m_rightHand[2]);
+			break;
+		default:
+			pose.poseIsValid = false;
+			return pose;
+		}
+
+		double cyaw = 0, cpitch = 0, croll = 0; // TODO: Get rotation values
+
+		//Convert yaw, pitch, roll to quaternion
+		double ct0, ct1, ct2, ct3, ct4, ct5;
+		ct0 = cos(cyaw * 0.5);
+		ct1 = sin(cyaw * 0.5);
+		ct2 = cos(croll * 0.5);
+		ct3 = sin(croll * 0.5);
+		ct4 = cos(cpitch * 0.5);
+		ct5 = sin(cpitch * 0.5);
+
+		//Set controller rotation
+		pose.qRotation.w = ct0 * ct2 * ct4 + ct1 * ct3 * ct5;
+		pose.qRotation.x = ct0 * ct3 * ct4 - ct1 * ct2 * ct5;
+		pose.qRotation.y = ct0 * ct2 * ct5 + ct1 * ct3 * ct4;
+		pose.qRotation.z = ct1 * ct2 * ct4 - ct0 * ct3 * ct5;
+
+		return pose;
+
+	}
+
 	virtual DriverPose_t GetPose()
 	{
 		DriverPose_t pose = { 0 };
+
+		if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) return GetHandPose();
 
 		if (!m_calibrationDone && !CalibrateJointPositions())
 		{
@@ -294,8 +343,11 @@ public:
 				int handNumber = 0;
 				GestureResult* hands = g_handTracking.getHandTrackingData(&handNumber);
 				for (int i = 0; i < handNumber; i++) {
-					if ((hands[i].isLeft && m_type == TrackerType::LeftHand) || (!hands[i].isLeft && m_type == TrackerType::RightHand)) {
-						// TODO: Do something
+					if (hands[i].isLeft && m_type == TrackerType::LeftHand) {
+						memcpy(m_leftHand, hands[i].points, sizeof(float) * 63);
+					}
+					else if(!hands[i].isLeft && m_type == TrackerType::RightHand) {
+						memcpy(m_rightHand, hands[i].points, sizeof(float) * 63);
 					};
 					
 				}
@@ -337,6 +389,9 @@ private:
 	std::string m_sModelNumber;
 	
 	TrackerType m_type;
+
+	float m_leftHand[63];
+	float m_rightHand[63];
 
 	bool m_calibrationDone;
 	float m_calibrationPos[3];

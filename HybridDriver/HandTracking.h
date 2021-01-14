@@ -59,5 +59,4 @@ private:
 
     HandTrackingState m_state;
 
-
 };

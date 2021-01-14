@@ -70,7 +70,7 @@ static const char * const k_pch_Sample_RenderHeight_Int32 = "renderHeight";
 static const char * const k_pch_Sample_SecondsFromVsyncToPhotons_Float = "secondsFromVsyncToPhotons";
 static const char * const k_pch_Sample_DisplayFrequency_Float = "displayFrequency";
 
-enum class TrackerType { Undefined = 0, LeftHand, RightHand, LeftFoot, RightFoot, Waist };
+enum class TrackerType { Undefined = -1, LeftHand = 0, RightHand, LeftFoot, RightFoot, Waist, TrackersCount };
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -306,6 +306,11 @@ public:
 			pose.vecPosition[1] = static_cast<double>(msg.HandRightPos.Y) + m_calibrationPos[1];
 			pose.vecPosition[2] = static_cast<double>(msg.HandRightPos.Z) + m_calibrationPos[2];
 			break;
+		case TrackerType::Waist:
+			pose.vecPosition[0] = static_cast<double>(msg.WaistPos.X) + m_calibrationPos[0];
+			pose.vecPosition[1] = static_cast<double>(msg.WaistPos.Y) + m_calibrationPos[1];
+			pose.vecPosition[2] = static_cast<double>(msg.WaistPos.Z) + m_calibrationPos[2];
+			break;
 		default:
 			pose.poseIsValid = false;
 			return pose;
@@ -427,7 +432,6 @@ private:
 };
 
 CServerDriver_Sample g_serverDriverNull;
-#define N_TRACKERS 2
 
 EVRInitError CServerDriver_Sample::Init( vr::IVRDriverContext *pDriverContext )
 {
@@ -437,11 +441,11 @@ EVRInitError CServerDriver_Sample::Init( vr::IVRDriverContext *pDriverContext )
 	DriverLog("Initializing Kinect");
 	g_bodyTracking.InitializeDefaultSensor();
 
-	DriverLog("Adding %d virtual trackers", N_TRACKERS);
+	DriverLog("Adding %d virtual trackers", TrackerType::TrackersCount);
 
-	for (int i = 0; i < N_TRACKERS; i++) {
+	for (int i = 0; i < static_cast<int>(TrackerType::TrackersCount); i++) {
 		CSampleControllerDriver* tracker = new CSampleControllerDriver();
-		tracker->SetControllerType(static_cast<TrackerType>(i + 1)); // TODO: Add 1 of each type
+		tracker->SetControllerType(static_cast<TrackerType>(i));
 
 		vr::VRServerDriverHost()->TrackedDeviceAdded(tracker->GetSerialNumber().c_str(), vr::TrackedDeviceClass_GenericTracker, tracker);
 		m_pTrackers.push_back(tracker);

@@ -364,7 +364,6 @@ public:
 
 private:
 	std::vector<CSampleControllerDriver*> m_pTrackers;
-	bool m_handtrackingStarted = false;
 };
 
 CServerDriver_Sample g_serverDriverNull;

@@ -1,8 +1,3 @@
-﻿  BodyTracking.cpp
-  driverlog.cpp
-  HandTracking.cpp
-  HybridDriver.cpp
-  Génération de code en cours...
-     Création de la bibliothèque C:\Users\Thomas\Documents\ProjetVR\Kinect\HybridDriver\x64\Debug\HybridDriver.lib et de l'objet C:\Users\Thomas\Documents\ProjetVR\Kinect\HybridDriver\x64\Debug\HybridDriver.exp
+﻿  HybridDriver.cpp
   HybridDriver.vcxproj -> C:\Users\Thomas\Documents\ProjetVR\Kinect\HybridDriver\x64\Debug\HybridDriver.dll
           1 fichier(s) copié(s).

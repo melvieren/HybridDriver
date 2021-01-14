@@ -86,6 +86,8 @@ public:
 		m_sSerialNumber = "CTRL_1234";
 		m_sModelNumber = "HybridController";
 		m_type = TrackerType::Undefined;
+		m_handtrackingStarted = false;
+		m_calibrationDone = false;
 	}
 
 	virtual ~CSampleControllerDriver()
@@ -225,7 +227,6 @@ public:
 		}
 
 		// Estimate joint positions in lighthouse coordinates
-		double x, y, z;
 		switch (m_type) {
 		case TrackerType::LeftFoot:
 			pose.vecPosition[0] = static_cast<double>(msg.FootLeftPos.X) + m_calibrationPos[0];
@@ -288,14 +289,21 @@ public:
 		}
 
 		if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) {
-			int handNumber = 0;
-			GestureResult* hands = getHandTrackingData(&handNumber);
-			for (int i = 0; i < handNumber; i++) {
-				if (hands[i].isLeft && m_type != TrackerType::LeftHand) continue;
-				if (!hands[i].isLeft && m_type != TrackerType::RightHand) continue;
-				// Do something
+			if (m_handtrackingStarted)
+			{
+				int handNumber = 0;
+				GestureResult* hands = getHandTrackingData(&handNumber);
+				for (int i = 0; i < handNumber; i++) {
+					if (hands[i].isLeft && m_type != TrackerType::LeftHand) continue;
+					if (!hands[i].isLeft && m_type != TrackerType::RightHand) continue;
+					// TODO: Do something
+				}
 			}
-
+			else {
+				DriverLog("Initializing Camera Module of HandTracking");
+				initHandTracking();
+				m_handtrackingStarted = true;
+			}
 		}
 
 		/* TODO: Update skeleton components */
@@ -312,7 +320,6 @@ public:
 			{
 				// This is where you would send a signal to your hardware to trigger actual haptic feedback
 				DriverLog( "BUZZ!\n" );
-
 			}
 		}
 		break;
@@ -335,8 +342,10 @@ private:
 	
 	TrackerType m_type;
 
-	bool m_calibrationDone = false;
+	bool m_calibrationDone;
 	float m_calibrationPos[3];
+
+	bool m_handtrackingStarted;
 };
 
 //-----------------------------------------------------------------------------
@@ -396,14 +405,6 @@ void CServerDriver_Sample::Cleanup()
 
 void CServerDriver_Sample::RunFrame()
 {
-	if (!m_handtrackingStarted) {
-		DriverLog("Initializing Camera Module of HandTracking");
-
-		initHandTracking();
-
-		m_handtrackingStarted = true;
-	}
-
 	for (auto it = std::begin(m_pTrackers); it != std::end(m_pTrackers); ++it) {
 		(*it)->RunFrame();
 	}

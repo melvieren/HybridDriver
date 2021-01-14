@@ -140,7 +140,7 @@
     <PostBuildEvent>
       <Message>
       </Message>
-      <Command>copy $(SolutionDir)$(Platform)\$(Configuration)\HybridDriver.dll  $(SolutionDir)bin\win64\driver_HybridDriver.dll</Command>
+      <Command>copy "$(SolutionDir)$(Platform)\$(Configuration)\HybridDriver.dll"  "$(SolutionDir)bin\win64\driver_HybridDriver.dll"</Command>
     </PostBuildEvent>
     <PreBuildEvent>
       <Command>
@@ -165,6 +165,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableUAC>false</EnableUAC>
     </Link>
+    <PostBuildEvent>
+      <Command>copy "$(SolutionDir)$(Platform)\$(Configuration)\HybridDriver.dll"  "$(SolutionDir)bin\win64\driver_HybridDriver.dll"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="BodyTracking.h" />

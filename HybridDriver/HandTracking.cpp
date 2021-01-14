@@ -46,5 +46,5 @@ int initHandTracking() {
 	gestureRecognition = new std::thread(updateHandTracking);
 
 	DriverLog("Initilization of HandTracking successful");
-
+	return 0;
 }

@@ -289,15 +289,15 @@ public:
 		}
 
 		if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) {
-			if (g_handTracking.getState() == HandTrackingState::Initialized && g_handTracking.isDataAvailable())
+			if (g_handTracking.getState() == HandTrackingState::Initialized )
 			{
 				int handNumber = 0;
 				GestureResult* hands = g_handTracking.getHandTrackingData(&handNumber);
 				for (int i = 0; i < handNumber; i++) {
-					if (hands[i].isLeft && m_type != TrackerType::LeftHand) continue;
-					if (!hands[i].isLeft && m_type != TrackerType::RightHand) continue;
-					DriverLog("Detected %s hand", hands[i].isLeft ? "left" : "right");
-					// TODO: Do something
+					if ((hands[i].isLeft && m_type == TrackerType::LeftHand) || (!hands[i].isLeft && m_type == TrackerType::RightHand)) {
+						// TODO: Do something
+					};
+					
 				}
 			}
 		}
@@ -363,7 +363,7 @@ private:
 };
 
 CServerDriver_Sample g_serverDriverNull;
-#define N_TRACKERS 1
+#define N_TRACKERS 2
 
 EVRInitError CServerDriver_Sample::Init( vr::IVRDriverContext *pDriverContext )
 {
@@ -377,7 +377,7 @@ EVRInitError CServerDriver_Sample::Init( vr::IVRDriverContext *pDriverContext )
 
 	for (int i = 0; i < N_TRACKERS; i++) {
 		CSampleControllerDriver* tracker = new CSampleControllerDriver();
-		tracker->SetControllerType(TrackerType::RightHand); // TODO: Add 1 of each type
+		tracker->SetControllerType(static_cast<TrackerType>(i + 1)); // TODO: Add 1 of each type
 
 		vr::VRServerDriverHost()->TrackedDeviceAdded(tracker->GetSerialNumber().c_str(), vr::TrackedDeviceClass_GenericTracker, tracker);
 		m_pTrackers.push_back(tracker);

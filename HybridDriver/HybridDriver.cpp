@@ -208,16 +208,25 @@ public:
 		pose.qWorldFromDriverRotation = HmdQuaternion_Init(1, 0, 0, 0);
 		pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
 
+		TrackedDevicePose_t hmd_tracker;
+		VRServerDriverHost()->GetRawTrackedDevicePoses(0, &hmd_tracker, 1);
+
+		// Get vec3 from matrix34
+		vr::HmdVector3_t hmdPos;
+		hmdPos.v[0] = hmd_tracker.mDeviceToAbsoluteTracking.m[0][3];
+		hmdPos.v[1] = hmd_tracker.mDeviceToAbsoluteTracking.m[1][3];
+		hmdPos.v[2] = hmd_tracker.mDeviceToAbsoluteTracking.m[2][3];
+
 		switch (m_type) {
 		case TrackerType::LeftHand:
-			pose.vecPosition[0] = static_cast<double>(m_leftHand[0]);
-			pose.vecPosition[1] = static_cast<double>(m_leftHand[1]);
-			pose.vecPosition[2] = static_cast<double>(m_leftHand[2]);
+			pose.vecPosition[0] = hmdPos.v[0] + static_cast<double>(m_leftHand[0]);
+			pose.vecPosition[1] = hmdPos.v[1] - static_cast<double>(m_leftHand[1]);
+			pose.vecPosition[2] = hmdPos.v[2] + static_cast<double>(m_leftHand[2]);
 			break;
 		case TrackerType::RightHand:
-			pose.vecPosition[0] = static_cast<double>(m_rightHand[0]);
-			pose.vecPosition[1] = static_cast<double>(m_rightHand[1]);
-			pose.vecPosition[2] = static_cast<double>(m_rightHand[2]);
+			pose.vecPosition[0] = hmdPos.v[0] + static_cast<double>(m_rightHand[0]);
+			pose.vecPosition[1] = hmdPos.v[1] - static_cast<double>(m_rightHand[1]);
+			pose.vecPosition[2] = hmdPos.v[2] + static_cast<double>(m_rightHand[2]);
 			break;
 		default:
 			pose.poseIsValid = false;

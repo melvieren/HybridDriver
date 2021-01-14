@@ -5,12 +5,6 @@
 
 #include "HandTracking.h"
 
-
-double clockToMilliseconds(clock_t ticks) {
-	// units/(units/time) => time (seconds) * 1000 = milliseconds
-	return (ticks / (double)CLOCKS_PER_SEC) * 1000.0;
-}
-
 CHandTracking::CHandTracking() :
 m_isDataAvailable(false),
 m_handCount(0),
@@ -34,6 +28,7 @@ void CHandTracking::InitializeDefaultSensor() {
 
 void CHandTracking::initialize() {
 	GestureOption option;
+	option.maxFPS = 30;
 	option.mode = GestureMode3DPoint;
 	UseExternalTransform(true);
 	GestureFailure result = StartGestureDetection(&option);
@@ -68,6 +63,8 @@ void CHandTracking::updateHandTracking() {
 		m_handCount = GetGestureResult((const GestureResult**)&m_handtrackingPoints, &frameIndex);
 		m_handtrackingPoints->isLeft;
 		m_handtrackingPoints->points;
+		using namespace std::chrono_literals;
+		std::this_thread::sleep_for(500ns);
 		if (frameIndex < 0) {
 			break;
 		}

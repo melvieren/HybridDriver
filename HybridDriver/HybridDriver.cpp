@@ -70,7 +70,7 @@ static const char * const k_pch_Sample_RenderHeight_Int32 = "renderHeight";
 static const char * const k_pch_Sample_SecondsFromVsyncToPhotons_Float = "secondsFromVsyncToPhotons";
 static const char * const k_pch_Sample_DisplayFrequency_Float = "displayFrequency";
 
-enum class TrackerType { Undefined = 0, LeftHand, RightHand, LeftFoot, RightFoot, Waist };
+enum class TrackerType { Undefined = -1, LeftHand = 0, RightHand, LeftFoot, RightFoot, Waist, TrackersCount };
 
 //-----------------------------------------------------------------------------
 // Purpose:
@@ -105,7 +105,7 @@ public:
 		m_unObjectId = unObjectId;
 		m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer( m_unObjectId );
 
-		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "locator_one_sided");
+		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "arrow");
 		vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_DeviceClass_Int32, TrackedDeviceClass_GenericTracker);
 
 		vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_ModelNumber_String, m_sModelNumber.c_str() );
@@ -113,12 +113,12 @@ public:
 		uint64_t supportedButtons = 0xFFFFFFFFFFFFFFFFULL;
 		vr::VRProperties()->SetUint64Property(m_ulPropertyContainer, vr::Prop_SupportedButtons_Uint64, supportedButtons);
 
-		if (m_type == TrackerType::RightHand)
+		/*if (m_type == TrackerType::RightHand)
 			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_RightHand);
 		else if (m_type == TrackerType::LeftHand)
 			vr::VRProperties()->SetInt32Property( m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_LeftHand );
 		else
-			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_OptOut);
+			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_OptOut);*/
 
 		// this file tells the UI what to show the user for binding this controller as well as what default bindings should
 		// be for legacy or other apps
@@ -258,7 +258,7 @@ public:
 	{
 		DriverPose_t pose = { 0 };
 
-		if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) return GetHandPose();
+		//if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) return GetHandPose();
 
 		if (!m_calibrationDone && !CalibrateJointPositions())
 		{
@@ -275,36 +275,35 @@ public:
 		pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
 
 		// Retrieve actual joint positions from Kinect
-		BodyEventMsg_t msg;
-		bool isDataAvailable;
-
-		g_bodyTracking.Update(&msg, &isDataAvailable);
-		if (!isDataAvailable) {
-			pose.poseIsValid = false;
-			return pose;
-		}
+		BodyEventMsg_t *msg;
+		g_bodyTracking.Update(&msg);
 
 		// Estimate joint positions in lighthouse coordinates
 		switch (m_type) {
 		case TrackerType::LeftFoot:
-			pose.vecPosition[0] = static_cast<double>(msg.FootLeftPos.X) + m_calibrationPos[0];
-			pose.vecPosition[1] = static_cast<double>(msg.FootLeftPos.Y) + m_calibrationPos[1];
-			pose.vecPosition[2] = static_cast<double>(msg.FootLeftPos.Z) + m_calibrationPos[2];
+			pose.vecPosition[0] = static_cast<double>(msg->FootLeftPos.X) + m_calibrationPos[0];
+			pose.vecPosition[1] = static_cast<double>(msg->FootLeftPos.Y) + m_calibrationPos[1];
+			pose.vecPosition[2] = static_cast<double>(msg->FootLeftPos.Z) + m_calibrationPos[2];
 			break;
 		case TrackerType::RightFoot:
-			pose.vecPosition[0] = static_cast<double>(msg.FootRightPos.X) + m_calibrationPos[0];
-			pose.vecPosition[1] = static_cast<double>(msg.FootRightPos.Y) + m_calibrationPos[1];
-			pose.vecPosition[2] = static_cast<double>(msg.FootRightPos.Z) + m_calibrationPos[2];
+			pose.vecPosition[0] = static_cast<double>(msg->FootRightPos.X) + m_calibrationPos[0];
+			pose.vecPosition[1] = static_cast<double>(msg->FootRightPos.Y) + m_calibrationPos[1];
+			pose.vecPosition[2] = static_cast<double>(msg->FootRightPos.Z) + m_calibrationPos[2];
 			break;
 		case TrackerType::LeftHand:
-			pose.vecPosition[0] = static_cast<double>(msg.HandLeftPos.X) + m_calibrationPos[0];
-			pose.vecPosition[1] = static_cast<double>(msg.HandLeftPos.Y) + m_calibrationPos[1];
-			pose.vecPosition[2] = static_cast<double>(msg.HandLeftPos.Z) + m_calibrationPos[2];
+			pose.vecPosition[0] = static_cast<double>(msg->HandLeftPos.X) + m_calibrationPos[0];
+			pose.vecPosition[1] = static_cast<double>(msg->HandLeftPos.Y) + m_calibrationPos[1];
+			pose.vecPosition[2] = static_cast<double>(msg->HandLeftPos.Z) + m_calibrationPos[2];
 			break;
 		case TrackerType::RightHand:
-			pose.vecPosition[0] = static_cast<double>(msg.HandRightPos.X) + m_calibrationPos[0];
-			pose.vecPosition[1] = static_cast<double>(msg.HandRightPos.Y) + m_calibrationPos[1];
-			pose.vecPosition[2] = static_cast<double>(msg.HandRightPos.Z) + m_calibrationPos[2];
+			pose.vecPosition[0] = static_cast<double>(msg->HandRightPos.X) + m_calibrationPos[0];
+			pose.vecPosition[1] = static_cast<double>(msg->HandRightPos.Y) + m_calibrationPos[1];
+			pose.vecPosition[2] = static_cast<double>(msg->HandRightPos.Z) + m_calibrationPos[2];
+			break;
+		case TrackerType::Waist:
+			pose.vecPosition[0] = static_cast<double>(msg->WaistPos.X) + m_calibrationPos[0];
+			pose.vecPosition[1] = static_cast<double>(msg->WaistPos.Y) + m_calibrationPos[1];
+			pose.vecPosition[2] = static_cast<double>(msg->WaistPos.Z) + m_calibrationPos[2];
 			break;
 		default:
 			pose.poseIsValid = false;
@@ -427,7 +426,6 @@ private:
 };
 
 CServerDriver_Sample g_serverDriverNull;
-#define N_TRACKERS 2
 
 EVRInitError CServerDriver_Sample::Init( vr::IVRDriverContext *pDriverContext )
 {
@@ -437,11 +435,11 @@ EVRInitError CServerDriver_Sample::Init( vr::IVRDriverContext *pDriverContext )
 	DriverLog("Initializing Kinect");
 	g_bodyTracking.InitializeDefaultSensor();
 
-	DriverLog("Adding %d virtual trackers", N_TRACKERS);
+	DriverLog("Adding %d virtual trackers", TrackerType::TrackersCount);
 
-	for (int i = 0; i < N_TRACKERS; i++) {
+	for (int i = 0; i < static_cast<int>(TrackerType::TrackersCount); i++) {
 		CSampleControllerDriver* tracker = new CSampleControllerDriver();
-		tracker->SetControllerType(static_cast<TrackerType>(i + 1)); // TODO: Add 1 of each type
+		tracker->SetControllerType(static_cast<TrackerType>(i));
 
 		vr::VRServerDriverHost()->TrackedDeviceAdded(tracker->GetSerialNumber().c_str(), vr::TrackedDeviceClass_GenericTracker, tracker);
 		m_pTrackers.push_back(tracker);

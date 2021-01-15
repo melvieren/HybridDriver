@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------
 
 #pragma once
+#include <thread>
 
 #include "Bridge.h"
 #include "stdafx.h"
@@ -33,7 +34,7 @@ public:
     /// <summary>
     /// Main processing function
     /// </summary>
-    void                    Update(BodyEventMsg_t *pMsg, bool *pIsDataAvailable);
+    void                    Update(BodyEventMsg_t **pMsg);
 
     /// <summary>
     /// Initializes the default Kinect sensor
@@ -52,6 +53,9 @@ public:
     bool                    ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies, BodyEventMsg_t *pMsg);
 
 private:
+
+    void Update_Internal();
+
     HWND                    m_hWnd;
     INT64                   m_nStartTime;
     INT64                   m_nLastCounter;
@@ -65,5 +69,9 @@ private:
 
     // Body reader
     IBodyFrameReader*       m_pBodyFrameReader;
+    BodyEventMsg_t m_Msg;
+
+    std::thread *m_thread;
+    bool m_stop;
 };
 

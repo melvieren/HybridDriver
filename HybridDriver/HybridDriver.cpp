@@ -29,6 +29,27 @@ using namespace vr;
 #error "Unsupported Platform."
 #endif
 
+
+HmdVector3d_t MultiplyByQuaternion(HmdQuaternion_t quat, HmdVector3d_t vec) {
+	float num = quat.x * 2.0f;
+	float num2 = quat.y * 2.0f;
+	float num3 = quat.z * 2.0f;
+	float num4 = quat.x * num;
+	float num5 = quat.y * num2;
+	float num6 = quat.z * num3;
+	float num7 = quat.x * num2;
+	float num8 = quat.x * num3;
+	float num9 = quat.y * num3;
+	float num10 = quat.w * num;
+	float num11 = quat.w * num2;
+	float num12 = quat.w * num3;
+	HmdVector3d_t result;
+	result.v[0] = (1.0f - (num5 + num6)) * vec.v[0] + (num7 - num12) * vec.v[1] + (num8 + num11) * vec.v[2];
+	result.v[1] = (num7 + num12) * vec.v[0] + (1.0f - (num4 + num6)) * vec.v[1] + (num9 - num10) * vec.v[2];
+	result.v[2] = (num8 - num11) * vec.v[0] + (num9 + num10) * vec.v[1] + (1.0f - (num4 + num5)) * vec.v[2];
+	return result;
+}
+
 inline HmdQuaternion_t HmdQuaternion_Init( double w, double x, double y, double z )
 {
 	HmdQuaternion_t quat;
@@ -37,6 +58,19 @@ inline HmdQuaternion_t HmdQuaternion_Init( double w, double x, double y, double 
 	quat.y = y;
 	quat.z = z;
 	return quat;
+}
+
+vr::HmdQuaternion_t GetHMDRotation(vr::HmdMatrix34_t matrix) {
+	vr::HmdQuaternion_t q;
+
+	q.w = sqrt(fmax(0, 1 + matrix.m[0][0] + matrix.m[1][1] + matrix.m[2][2])) / 2;
+	q.x = sqrt(fmax(0, 1 + matrix.m[0][0] - matrix.m[1][1] - matrix.m[2][2])) / 2;
+	q.y = sqrt(fmax(0, 1 - matrix.m[0][0] + matrix.m[1][1] - matrix.m[2][2])) / 2;
+	q.z = sqrt(fmax(0, 1 - matrix.m[0][0] - matrix.m[1][1] + matrix.m[2][2])) / 2;
+	q.x = copysign(q.x, matrix.m[2][1] - matrix.m[1][2]);
+	q.y = copysign(q.y, matrix.m[0][2] - matrix.m[2][0]);
+	q.z = copysign(q.z, matrix.m[1][0] - matrix.m[0][1]);
+	return q;
 }
 
 inline void HmdMatrix_SetIdentity( HmdMatrix34_t *pMatrix )
@@ -211,27 +245,22 @@ public:
 		TrackedDevicePose_t hmd_tracker;
 		VRServerDriverHost()->GetRawTrackedDevicePoses(0, &hmd_tracker, 1);
 
+		vr::HmdVector3d_t handPos;
+		handPos.v[0] = m_type == TrackerType::LeftHand ? m_leftHand[0] : m_rightHand[0];
+		handPos.v[1] = m_type == TrackerType::LeftHand ? m_leftHand[1] : m_rightHand[1];
+		handPos.v[2] = m_type == TrackerType::LeftHand ? m_leftHand[2] : m_rightHand[2];
+		handPos = MultiplyByQuaternion(GetHMDRotation(hmd_tracker.mDeviceToAbsoluteTracking), handPos);
+
 		// Get vec3 from matrix34
 		vr::HmdVector3_t hmdPos;
 		hmdPos.v[0] = hmd_tracker.mDeviceToAbsoluteTracking.m[0][3];
 		hmdPos.v[1] = hmd_tracker.mDeviceToAbsoluteTracking.m[1][3];
 		hmdPos.v[2] = hmd_tracker.mDeviceToAbsoluteTracking.m[2][3];
 
-		switch (m_type) {
-		case TrackerType::LeftHand:
-			pose.vecPosition[0] = hmdPos.v[0] + static_cast<double>(m_leftHand[0]);
-			pose.vecPosition[1] = hmdPos.v[1] + static_cast<double>(m_leftHand[1]);
-			pose.vecPosition[2] = hmdPos.v[2] - static_cast<double>(m_leftHand[2]);
-			break;
-		case TrackerType::RightHand:
-			pose.vecPosition[0] = hmdPos.v[0] + static_cast<double>(m_rightHand[0]);
-			pose.vecPosition[1] = hmdPos.v[1] + static_cast<double>(m_rightHand[1]);
-			pose.vecPosition[2] = hmdPos.v[2] - static_cast<double>(m_rightHand[2]);
-			break;
-		default:
-			pose.poseIsValid = false;
-			return pose;
-		}
+		pose.vecPosition[0] = hmdPos.v[0] + static_cast<double>(handPos.v[0]);
+		pose.vecPosition[1] = hmdPos.v[1] + static_cast<double>(handPos.v[1]);
+		pose.vecPosition[2] = hmdPos.v[2] + static_cast<double>(handPos.v[2]);
+		
 
 		double cyaw = 0, cpitch = 0, croll = 0; // TODO: Get rotation values
 

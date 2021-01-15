@@ -220,12 +220,12 @@ public:
 		switch (m_type) {
 		case TrackerType::LeftHand:
 			pose.vecPosition[0] = hmdPos.v[0] + static_cast<double>(m_leftHand[0]);
-			pose.vecPosition[1] = hmdPos.v[1] - static_cast<double>(m_leftHand[1]);
+			pose.vecPosition[1] = hmdPos.v[1] + static_cast<double>(m_leftHand[1]);
 			pose.vecPosition[2] = hmdPos.v[2] + static_cast<double>(m_leftHand[2]);
 			break;
 		case TrackerType::RightHand:
 			pose.vecPosition[0] = hmdPos.v[0] + static_cast<double>(m_rightHand[0]);
-			pose.vecPosition[1] = hmdPos.v[1] - static_cast<double>(m_rightHand[1]);
+			pose.vecPosition[1] = hmdPos.v[1] + static_cast<double>(m_rightHand[1]);
 			pose.vecPosition[2] = hmdPos.v[2] + static_cast<double>(m_rightHand[2]);
 			break;
 		default:

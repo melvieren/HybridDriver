@@ -18,7 +18,6 @@ CHandTracking::~CHandTracking() {
 	m_stop = true;
 	m_gestureRecognition->join();
 	StopGestureDetection();
-
 }
 
 void CHandTracking::InitializeDefaultSensor() {

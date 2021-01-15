@@ -27,8 +27,8 @@ void CHandTracking::InitializeDefaultSensor() {
 
 void CHandTracking::initialize() {
 	GestureOption option;
-	option.maxFPS = 30;
-	option.mode = GestureMode3DPoint;
+	option.maxFPS = 60;
+	//option.mode = GestureMode3DPoint;
 	UseExternalTransform(true);
 	GestureFailure result = StartGestureDetection(&option);
 	if (result != GestureFailureNone) {

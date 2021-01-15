@@ -105,7 +105,7 @@ public:
 		m_unObjectId = unObjectId;
 		m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer( m_unObjectId );
 
-		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "locator_one_sided");
+		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "arrow");
 		vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_DeviceClass_Int32, TrackedDeviceClass_GenericTracker);
 
 		vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_ModelNumber_String, m_sModelNumber.c_str() );
@@ -113,12 +113,12 @@ public:
 		uint64_t supportedButtons = 0xFFFFFFFFFFFFFFFFULL;
 		vr::VRProperties()->SetUint64Property(m_ulPropertyContainer, vr::Prop_SupportedButtons_Uint64, supportedButtons);
 
-		if (m_type == TrackerType::RightHand)
+		/*if (m_type == TrackerType::RightHand)
 			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_RightHand);
 		else if (m_type == TrackerType::LeftHand)
 			vr::VRProperties()->SetInt32Property( m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_LeftHand );
 		else
-			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_OptOut);
+			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_OptOut);*/
 
 		// this file tells the UI what to show the user for binding this controller as well as what default bindings should
 		// be for legacy or other apps
@@ -258,7 +258,7 @@ public:
 	{
 		DriverPose_t pose = { 0 };
 
-		if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) return GetHandPose();
+		//if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) return GetHandPose();
 
 		if (!m_calibrationDone && !CalibrateJointPositions())
 		{
@@ -275,41 +275,35 @@ public:
 		pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
 
 		// Retrieve actual joint positions from Kinect
-		BodyEventMsg_t msg;
-		bool isDataAvailable;
-
-		g_bodyTracking.Update(&msg, &isDataAvailable);
-		if (!isDataAvailable) {
-			pose.poseIsValid = false;
-			return pose;
-		}
+		BodyEventMsg_t *msg;
+		g_bodyTracking.Update(&msg);
 
 		// Estimate joint positions in lighthouse coordinates
 		switch (m_type) {
 		case TrackerType::LeftFoot:
-			pose.vecPosition[0] = static_cast<double>(msg.FootLeftPos.X) + m_calibrationPos[0];
-			pose.vecPosition[1] = static_cast<double>(msg.FootLeftPos.Y) + m_calibrationPos[1];
-			pose.vecPosition[2] = static_cast<double>(msg.FootLeftPos.Z) + m_calibrationPos[2];
+			pose.vecPosition[0] = static_cast<double>(msg->FootLeftPos.X) + m_calibrationPos[0];
+			pose.vecPosition[1] = static_cast<double>(msg->FootLeftPos.Y) + m_calibrationPos[1];
+			pose.vecPosition[2] = static_cast<double>(msg->FootLeftPos.Z) + m_calibrationPos[2];
 			break;
 		case TrackerType::RightFoot:
-			pose.vecPosition[0] = static_cast<double>(msg.FootRightPos.X) + m_calibrationPos[0];
-			pose.vecPosition[1] = static_cast<double>(msg.FootRightPos.Y) + m_calibrationPos[1];
-			pose.vecPosition[2] = static_cast<double>(msg.FootRightPos.Z) + m_calibrationPos[2];
+			pose.vecPosition[0] = static_cast<double>(msg->FootRightPos.X) + m_calibrationPos[0];
+			pose.vecPosition[1] = static_cast<double>(msg->FootRightPos.Y) + m_calibrationPos[1];
+			pose.vecPosition[2] = static_cast<double>(msg->FootRightPos.Z) + m_calibrationPos[2];
 			break;
 		case TrackerType::LeftHand:
-			pose.vecPosition[0] = static_cast<double>(msg.HandLeftPos.X) + m_calibrationPos[0];
-			pose.vecPosition[1] = static_cast<double>(msg.HandLeftPos.Y) + m_calibrationPos[1];
-			pose.vecPosition[2] = static_cast<double>(msg.HandLeftPos.Z) + m_calibrationPos[2];
+			pose.vecPosition[0] = static_cast<double>(msg->HandLeftPos.X) + m_calibrationPos[0];
+			pose.vecPosition[1] = static_cast<double>(msg->HandLeftPos.Y) + m_calibrationPos[1];
+			pose.vecPosition[2] = static_cast<double>(msg->HandLeftPos.Z) + m_calibrationPos[2];
 			break;
 		case TrackerType::RightHand:
-			pose.vecPosition[0] = static_cast<double>(msg.HandRightPos.X) + m_calibrationPos[0];
-			pose.vecPosition[1] = static_cast<double>(msg.HandRightPos.Y) + m_calibrationPos[1];
-			pose.vecPosition[2] = static_cast<double>(msg.HandRightPos.Z) + m_calibrationPos[2];
+			pose.vecPosition[0] = static_cast<double>(msg->HandRightPos.X) + m_calibrationPos[0];
+			pose.vecPosition[1] = static_cast<double>(msg->HandRightPos.Y) + m_calibrationPos[1];
+			pose.vecPosition[2] = static_cast<double>(msg->HandRightPos.Z) + m_calibrationPos[2];
 			break;
 		case TrackerType::Waist:
-			pose.vecPosition[0] = static_cast<double>(msg.WaistPos.X) + m_calibrationPos[0];
-			pose.vecPosition[1] = static_cast<double>(msg.WaistPos.Y) + m_calibrationPos[1];
-			pose.vecPosition[2] = static_cast<double>(msg.WaistPos.Z) + m_calibrationPos[2];
+			pose.vecPosition[0] = static_cast<double>(msg->WaistPos.X) + m_calibrationPos[0];
+			pose.vecPosition[1] = static_cast<double>(msg->WaistPos.Y) + m_calibrationPos[1];
+			pose.vecPosition[2] = static_cast<double>(msg->WaistPos.Z) + m_calibrationPos[2];
 			break;
 		default:
 			pose.poseIsValid = false;

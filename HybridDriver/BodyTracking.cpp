@@ -5,6 +5,7 @@
 //------------------------------------------------------------------------------
 
 #include <iostream>
+#include <thread>
 
 #include "stdafx.h"
 #include <strsafe.h>
@@ -28,7 +29,10 @@ CBodyTracking::CBodyTracking() :
     m_nNextStatusTime(0LL),
     m_pKinectSensor(NULL),
     m_pCoordinateMapper(NULL),
-    m_pBodyFrameReader(NULL)
+    m_pBodyFrameReader(NULL),
+    m_Msg({ 0 }),
+    m_thread(NULL),
+    m_stop(false)
 {
     LARGE_INTEGER qpf = {0};
     if (QueryPerformanceFrequency(&qpf))
@@ -43,6 +47,8 @@ CBodyTracking::CBodyTracking() :
 /// </summary>
 CBodyTracking::~CBodyTracking()
 {
+    m_stop = true;
+    m_thread->join();
 
     // done with body frame reader
     SafeRelease(m_pBodyFrameReader);
@@ -128,44 +134,51 @@ void CBodyTracking::GetHeadPosition(float headPosition[3], bool* pIsDataAvailabl
 /// <summary>
 /// Main processing function
 /// </summary>
-void CBodyTracking::Update(BodyEventMsg_t *pMsg, bool* pIsDataAvailable)
+void CBodyTracking::Update(BodyEventMsg_t** ppMsg)
 {
-    *pIsDataAvailable = false;
+    *ppMsg = &m_Msg;
+}
 
+/// <summary>
+/// Main processing function
+/// </summary>
+void CBodyTracking::Update_Internal()
+{
     if (!m_pBodyFrameReader)
     {
         return;
     }
 
     IBodyFrame* pBodyFrame = NULL;
-
-    HRESULT hr = m_pBodyFrameReader->AcquireLatestFrame(&pBodyFrame);
-
-    if (SUCCEEDED(hr))
-    {
-        INT64 nTime = 0;
-
-        hr = pBodyFrame->get_RelativeTime(&nTime);
-
-        IBody* ppBodies[BODY_COUNT] = {0};
+    while (!m_stop) {
+        HRESULT hr = m_pBodyFrameReader->AcquireLatestFrame(&pBodyFrame);
 
         if (SUCCEEDED(hr))
         {
-            hr = pBodyFrame->GetAndRefreshBodyData(_countof(ppBodies), ppBodies);
+            INT64 nTime = 0;
+
+            hr = pBodyFrame->get_RelativeTime(&nTime);
+
+            IBody* ppBodies[BODY_COUNT] = { 0 };
+
+            if (SUCCEEDED(hr))
+            {
+                hr = pBodyFrame->GetAndRefreshBodyData(_countof(ppBodies), ppBodies);
+            }
+
+            if (SUCCEEDED(hr))
+            {
+                ProcessBody(nTime, BODY_COUNT, ppBodies, &m_Msg);
+            }
+
+            for (int i = 0; i < _countof(ppBodies); ++i)
+            {
+                SafeRelease(ppBodies[i]);
+            }
         }
 
-        if (SUCCEEDED(hr))
-        {
-            *pIsDataAvailable = ProcessBody(nTime, BODY_COUNT, ppBodies, pMsg);
-        }
-
-        for (int i = 0; i < _countof(ppBodies); ++i)
-        {
-            SafeRelease(ppBodies[i]);
-        }
+        SafeRelease(pBodyFrame);
     }
-
-    SafeRelease(pBodyFrame);
 }
 
 /// <summary>
@@ -211,6 +224,8 @@ HRESULT CBodyTracking::InitializeDefaultSensor()
     {
         return E_FAIL;
     }
+
+    m_thread = new std::thread(&CBodyTracking::Update_Internal, this);
 
     return hr;
 }

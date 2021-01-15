@@ -248,8 +248,9 @@ public:
 		vr::HmdVector3d_t handPos;
 		handPos.v[0] = m_type == TrackerType::LeftHand ? m_leftHand[0] : m_rightHand[0];
 		handPos.v[1] = m_type == TrackerType::LeftHand ? m_leftHand[1] : m_rightHand[1];
-		handPos.v[2] = m_type == TrackerType::LeftHand ? m_leftHand[2] : m_rightHand[2];
-		handPos = MultiplyByQuaternion(GetHMDRotation(hmd_tracker.mDeviceToAbsoluteTracking), handPos);
+		handPos.v[2] = - (m_type == TrackerType::LeftHand ? m_leftHand[2] : m_rightHand[2]);
+		HmdQuaternion_t hmdQuaternion = GetHMDRotation(hmd_tracker.mDeviceToAbsoluteTracking);
+		handPos = MultiplyByQuaternion(hmdQuaternion, handPos);
 
 		// Get vec3 from matrix34
 		vr::HmdVector3_t hmdPos;
@@ -260,24 +261,9 @@ public:
 		pose.vecPosition[0] = hmdPos.v[0] + static_cast<double>(handPos.v[0]);
 		pose.vecPosition[1] = hmdPos.v[1] + static_cast<double>(handPos.v[1]);
 		pose.vecPosition[2] = hmdPos.v[2] + static_cast<double>(handPos.v[2]);
-		
 
-		double cyaw = 0, cpitch = 0, croll = 0; // TODO: Get rotation values
+		pose.qRotation = hmdQuaternion;
 
-		//Convert yaw, pitch, roll to quaternion
-		double ct0, ct1, ct2, ct3, ct4, ct5;
-		ct0 = cos(cyaw * 0.5);
-		ct1 = sin(cyaw * 0.5);
-		ct2 = cos(croll * 0.5);
-		ct3 = sin(croll * 0.5);
-		ct4 = cos(cpitch * 0.5);
-		ct5 = sin(cpitch * 0.5);
-
-		//Set controller rotation
-		pose.qRotation.w = ct0 * ct2 * ct4 + ct1 * ct3 * ct5;
-		pose.qRotation.x = ct0 * ct3 * ct4 - ct1 * ct2 * ct5;
-		pose.qRotation.y = ct0 * ct2 * ct5 + ct1 * ct3 * ct4;
-		pose.qRotation.z = ct1 * ct2 * ct4 - ct0 * ct3 * ct5;
 
 		return pose;
 

@@ -139,7 +139,7 @@ public:
 		m_unObjectId = unObjectId;
 		m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer( m_unObjectId );
 
-		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "{HybridDriver}/rendermodels/right_hand_test");
+		
 		vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_DeviceClass_Int32, TrackedDeviceClass_GenericTracker);
 
 		vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_ModelNumber_String, m_sModelNumber.c_str() );
@@ -147,12 +147,26 @@ public:
 		uint64_t supportedButtons = 0xFFFFFFFFFFFFFFFFULL;
 		vr::VRProperties()->SetUint64Property(m_ulPropertyContainer, vr::Prop_SupportedButtons_Uint64, supportedButtons);
 
-		/*if (m_type == TrackerType::RightHand)
+		if (m_type == TrackerType::RightHand) {
 			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_RightHand);
-		else if (m_type == TrackerType::LeftHand)
-			vr::VRProperties()->SetInt32Property( m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_LeftHand );
-		else
-			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_OptOut);*/
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "{HybridDriver}/rendermodels/right_hand_test");
+			vr::EVRInputError err = vr::VRDriverInput()->CreateSkeletonComponent(m_ulPropertyContainer, "/input/skeleton/right", "/skeleton/hand/right", "/pose/raw", EVRSkeletalTrackingLevel::VRSkeletalTracking_Full, NULL, 31, &g_handTracking.rightHandComponentHandler);
+			if (err != vr::VRInputError_None)
+			{
+				// Handle failure case
+				DriverLog("CreateSkeletonComponent failed.  Error: %i\n", err);
+			}
+		}
+		else if (m_type == TrackerType::LeftHand) {
+			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_LeftHand);
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "{HybridDriver}/rendermodels/right_hand_test");
+
+		}
+		else {
+			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_OptOut);
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "arrow");
+		}
+			
 
 		// this file tells the UI what to show the user for binding this controller as well as what default bindings should
 		// be for legacy or other apps
@@ -263,6 +277,18 @@ public:
 		pose.vecPosition[2] = hmdPos.v[2] + static_cast<double>(handPos.v[2]);
 
 		pose.qRotation = hmdQuaternion;
+
+		if (m_type == TrackerType::RightHand) {
+			vr:VRBoneTransform_t bones[31];
+			g_handTracking.getRightHandBones(bones, m_rightHand);
+			vr::EVRInputError err = vr::VRDriverInput()->UpdateSkeletonComponent(g_handTracking.rightHandComponentHandler, vr::VRSkeletalMotionRange_WithoutController, bones, 31);
+			if (err != vr::VRInputError_None)
+			{
+				// Handle failure case
+				DriverLog("UpdateSkeletonComponent failed.  Error: %i\n", err);
+			}
+		 	
+		}
 
 
 		return pose;

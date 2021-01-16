@@ -122,16 +122,6 @@ void CHandTracking::updateHandTracking() {
 	}
 }
 
-vr::HmdVector3_t * pointsToVector3(float points[]) {
-	vr::HmdVector3_t* out = new vr::HmdVector3_t[21];
-	for (int i = 0; i < 1; i++) {
-		out[i].v[0] = points[i * 3];
-		out[i].v[1] = points[i * 3 + 1];
-		out[i].v[2] = - points[i * 3 + 2];
-	}
-	return out;
-}
-
 vr::HmdVector4_t vector3to4(vr::HmdVector3_t v) {
 	vr::HmdVector4_t out;
 	out.v[0] = v.v[0];
@@ -153,7 +143,12 @@ void assignBone(vr::VRBoneTransform_t* bone, int point_one, int point_two, int f
 
 
 void CHandTracking::getRightHandBones(vr::VRBoneTransform_t* bones, float points[]) {
-	vr::HmdVector3_t * vectors = pointsToVector3(points);
+	vr::HmdVector3_t vectors[21];
+	for (int i = 0; i < 21; i++) {
+		vectors[i].v[0] = points[i * 3];
+		vectors[i].v[1] = points[i * 3 + 1];
+		vectors[i].v[2] = -points[i * 3 + 2];
+	}
 	for (int i = 0; i < 31; i++) {
 		switch (i) {
 		case HandSkeletonBone::eBone_Root:
@@ -219,8 +214,6 @@ void CHandTracking::getRightHandBones(vr::VRBoneTransform_t* bones, float points
 		case HandSkeletonBone::eBone_Aux_PinkyFinger:
 			assignBone(&bones[i], PointNaming::Base, PointNaming::Pinky3, vectors); break;
 		}
-
-
-
+		
 	}
 }

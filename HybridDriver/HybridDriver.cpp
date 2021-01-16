@@ -277,20 +277,6 @@ public:
 		pose.vecPosition[2] = hmdPos.v[2] + static_cast<double>(handPos.v[2]);
 
 		pose.qRotation = hmdQuaternion;
-
-		if (m_type == TrackerType::RightHand) {
-			vr:VRBoneTransform_t bones[31];
-			g_handTracking.getRightHandBones(bones, m_rightHand);
-			vr::EVRInputError err = vr::VRDriverInput()->UpdateSkeletonComponent(g_handTracking.rightHandComponentHandler, vr::VRSkeletalMotionRange_WithoutController, bones, 31);
-			if (err != vr::VRInputError_None)
-			{
-				// Handle failure case
-				DriverLog("UpdateSkeletonComponent failed.  Error: %i\n", err);
-			}
-		 	
-		}
-
-
 		return pose;
 
 	}
@@ -397,6 +383,20 @@ public:
 					}
 					else if(!hands[i].isLeft && m_type == TrackerType::RightHand) {
 						memcpy(m_rightHand, hands[i].points, sizeof(float) * 63);
+					    vr:VRBoneTransform_t bones[31];
+						g_handTracking.getRightHandBones(bones, m_rightHand);
+						vr::EVRInputError err = vr::VRDriverInput()->UpdateSkeletonComponent(g_handTracking.rightHandComponentHandler, vr::VRSkeletalMotionRange_WithController, bones, 31);
+						if (err != vr::VRInputError_None)
+						{
+							// Handle failure case
+							DriverLog("UpdateSkeletonComponent failed.  Error: %i\n", err);
+						}
+						err = vr::VRDriverInput()->UpdateSkeletonComponent(g_handTracking.rightHandComponentHandler, vr::VRSkeletalMotionRange_WithoutController, bones, 31);
+						if (err != vr::VRInputError_None)
+						{
+							// Handle failure case
+							DriverLog("UpdateSkeletonComponent failed.  Error: %i\n", err);
+						}
 					};
 					
 				}

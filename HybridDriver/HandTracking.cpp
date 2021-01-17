@@ -52,14 +52,16 @@ CHandTracking::CHandTracking() :
 m_isDataAvailable(false),
 m_handCount(0),
 m_stop(false),
+m_gestureRecognition(NULL),
 m_state(HandTrackingState::Unitialized)
 {
 
 }
 
 CHandTracking::~CHandTracking() {
+	DriverLog(" HandTracking | Destructing HandTracking structure");
 	m_stop = true;
-	m_gestureRecognition->join();
+	if (m_gestureRecognition != NULL) m_gestureRecognition->join();
 	StopGestureDetection();
 }
 
@@ -70,19 +72,19 @@ void CHandTracking::InitializeDefaultSensor() {
 
 void CHandTracking::initialize() {
 	GestureOption option;
-	option.maxFPS = 90;
+	option.maxFPS = 60;
 	//option.mode = GestureMode3DPoint;
 	UseExternalTransform(true);
 	GestureFailure result = StartGestureDetection(&option);
 	if (result != GestureFailureNone) {
-		DriverLog("Initilization of HandTracking failed");
+		DriverLog(" HandTracking | Initilization of HandTracking failed");
 		m_state = HandTrackingState::Error;
 		return;
 	}
 
 	m_gestureRecognition = new std::thread(&CHandTracking::updateHandTracking, this);
 
-	DriverLog("Initilization of HandTracking successful");
+	DriverLog(" HandTracking | Initilization of HandTracking successful");
 	m_state = HandTrackingState::Initialized;
 	return;
 }
@@ -114,10 +116,8 @@ void CHandTracking::updateHandTracking() {
 
 		if (m_handCount > 0) m_isDataAvailable = true;
 		lastFrameIndex = frameIndex;
-		
-
-
 	}
+	DriverLog(" HandTracking | Updated thread ended");
 }
 
 void vector3to4(vr::HmdVector4_t * out, vr::HmdVector3_t v) {

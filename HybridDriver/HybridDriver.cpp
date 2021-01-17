@@ -510,8 +510,6 @@ void CServerDriver_Sample::Cleanup()
 		DriverLog("Stopping %s", (*it)->GetSerialNumber());
 		delete *it;
 	}
-	g_bodyTracking.~CBodyTracking();
-	g_handTracking.~CHandTracking();
 	m_pTrackers.clear();
 	//CleanupDriverLog();
 }

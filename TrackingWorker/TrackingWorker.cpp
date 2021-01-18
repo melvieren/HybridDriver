@@ -13,7 +13,7 @@
 
 using namespace vr;
 
-#define BUF_SIZE 256 //sizeof(BodyEventMsg_t) + sizeof(HandEventMsg_t)
+#define BUF_SIZE sizeof(BodyEventMsg_t) + sizeof(HandEventMsg_t)
 TCHAR szName[] = TEXT("Global\HybridDriverSHM");
 
 HANDLE hMapFile;
@@ -42,7 +42,7 @@ int main()
     };
     VROverlay()->SetOverlayTransformAbsolute(handle, TrackingUniverseStanding, &transform);
 
-    /*std::cout << "Creating a SHM of size " << BUF_SIZE << std::endl;
+    std::cout << "Creating a SHM of size " << BUF_SIZE << std::endl;
     hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, BUF_SIZE, szName);
 
     if (hMapFile == NULL)
@@ -59,8 +59,16 @@ int main()
             GetLastError());
         CloseHandle(hMapFile);
         return 1;
-    }*/
-    Sleep(20000);
+    }
+    bool started = false;
+    while (!started) {
+        vr::VREvent_t vrEvent;
+        if (VROverlay()->PollNextOverlayEvent(handle, &vrEvent, sizeof(vr::VREvent_t))) {
+            std::cout << "Got event number " << vrEvent.eventType << std::endl;
+            if (vrEvent.eventType == vr::VREvent_DashboardActivated) started = true;
+            else Sleep(10);
+        }
+    }
     CHandTracking handTracking;
     CBodyTracking bodyTrakcing;
     std::cout << "Starting Hand Tracking" << std::endl;

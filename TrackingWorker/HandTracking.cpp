@@ -122,7 +122,6 @@ void CHandTracking::updateHandTracking() {
 		}
 		lastFrameIndex = frameIndex;
 	}
-	std::cout << " HandTracking | Updated thread ended" << std::endl;
 }
 
 void vector3to4(vr::HmdVector4_t* out, vr::HmdVector3_t v) {

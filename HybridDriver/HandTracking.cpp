@@ -17,51 +17,51 @@ inline float dotProduct(vr::HmdVector3_t v[], vr::HmdVector3_t u[])
 
 // Function to find 
 // cross product of two vector array. 
-inline vr::HmdVector3_t crossProduct(vr::HmdVector3_t * v, vr::HmdVector3_t * u)
+inline void crossProduct(vr::HmdVector3_t* out, vr::HmdVector3_t * v, vr::HmdVector3_t * u)
 {
-	vr::HmdVector3_t out;
-	out.v[0] = v->v[1] * u->v[2] - v->v[2] * u->v[1];
-	out.v[1] = v->v[2] * u->v[0] - v->v[0] * u->v[2];
-	out.v[2] = v->v[0] * u->v[1] - v->v[1] * u->v[0];
-	return out;
+	out->v[0] = v->v[1] * u->v[2] - v->v[2] * u->v[1];
+	out->v[1] = v->v[2] * u->v[0] - v->v[0] * u->v[2];
+	out->v[2] = v->v[0] * u->v[1] - v->v[1] * u->v[0];
 }
 
 inline float vectorLength(vr::HmdVector3_t* v) {
 	return sqrt(v->v[0] * v->v[0] + v->v[1] * v->v[1] + v->v[2] * v->v[2]);
 }
 
-inline vr::HmdQuaternionf_t quaternionFromTwoVectors(vr::HmdVector3_t v[], vr::HmdVector3_t u[]) {
+inline void quaternionFromTwoVectors(vr::HmdQuaternionf_t * out, vr::HmdVector3_t v[], vr::HmdVector3_t u[]) {
 	vr::HmdQuaternionf_t q;
-	vr::HmdVector3_t a = crossProduct(v, u);
-	q.x = a.v[0];
-	q.y = a.v[1];
-	q.z = a.v[2];
+	vr::HmdVector3_t a;
+	crossProduct(&a, v, u);
+	out->x = a.v[0];
+	out->y = a.v[1];
+	out->z = a.v[2];
 	float dotP = dotProduct(u, v);
 	if (dotP > 0.999999) { // Handling parallel vectors
-		q.x = 0.0f;
-		q.y = 0.0f;
-		q.z = 0.0f;
-		q.w = 1.0f;
+		out->x = 0.0f;
+		out->y = 0.0f;
+		out->z = 0.0f;
+		out->w = 1.0f;
 	}
 	float v_length = vectorLength(v);
 	float u_length = vectorLength(u);
 	//Todo: Handle opposite vectors
-	q.w = sqrt(v_length * v_length * u_length * u_length) + dotP;
-	return q;
+	out->w = sqrt(v_length * v_length * u_length * u_length) + dotP;
 }
 
 CHandTracking::CHandTracking() :
 m_isDataAvailable(false),
 m_handCount(0),
 m_stop(false),
+m_gestureRecognition(NULL),
 m_state(HandTrackingState::Unitialized)
 {
 
 }
 
 CHandTracking::~CHandTracking() {
+	DriverLog(" HandTracking | Destructing HandTracking structure");
 	m_stop = true;
-	m_gestureRecognition->join();
+	if (m_gestureRecognition != NULL) m_gestureRecognition->join();
 	StopGestureDetection();
 }
 
@@ -72,19 +72,19 @@ void CHandTracking::InitializeDefaultSensor() {
 
 void CHandTracking::initialize() {
 	GestureOption option;
-	option.maxFPS = 90;
+	option.maxFPS = 60;
 	//option.mode = GestureMode3DPoint;
 	UseExternalTransform(true);
 	GestureFailure result = StartGestureDetection(&option);
 	if (result != GestureFailureNone) {
-		DriverLog("Initilization of HandTracking failed");
+		DriverLog(" HandTracking | Initilization of HandTracking failed");
 		m_state = HandTrackingState::Error;
 		return;
 	}
 
 	m_gestureRecognition = new std::thread(&CHandTracking::updateHandTracking, this);
 
-	DriverLog("Initilization of HandTracking successful");
+	DriverLog(" HandTracking | Initilization of HandTracking successful");
 	m_state = HandTrackingState::Initialized;
 	return;
 }
@@ -116,44 +116,35 @@ void CHandTracking::updateHandTracking() {
 
 		if (m_handCount > 0) m_isDataAvailable = true;
 		lastFrameIndex = frameIndex;
-		
-
-
 	}
+	DriverLog(" HandTracking | Updated thread ended");
 }
 
-vr::HmdVector3_t * pointsToVector3(float points[]) {
-	vr::HmdVector3_t* out = new vr::HmdVector3_t[21];
-	for (int i = 0; i < 1; i++) {
-		out[i].v[0] = points[i * 3];
-		out[i].v[1] = points[i * 3 + 1];
-		out[i].v[2] = - points[i * 3 + 2];
-	}
-	return out;
-}
-
-vr::HmdVector4_t vector3to4(vr::HmdVector3_t v) {
-	vr::HmdVector4_t out;
-	out.v[0] = v.v[0];
-	out.v[1] = v.v[1];
-	out.v[2] = v.v[2];
-	out.v[3] = 1.0f;
-	return out;
+void vector3to4(vr::HmdVector4_t * out, vr::HmdVector3_t v) {
+	out->v[0] = v.v[0];
+	out->v[1] = v.v[1];
+	out->v[2] = v.v[2];
+	out->v[3] = 1.0f;
 }
 
 void assignBone(vr::VRBoneTransform_t* bone, int point_one, int point_two, vr::HmdVector3_t* vectors) {
-	bone->position = vector3to4(vectors[point_one]);
-	bone->orientation = quaternionFromTwoVectors(&vectors[point_one], &vectors[point_two]);
+	vector3to4(&bone->position, vectors[point_one]);
+	quaternionFromTwoVectors(&bone->orientation, &vectors[point_one], &vectors[point_two]);
 }
 
 void assignBone(vr::VRBoneTransform_t* bone, int point_one, int point_two, int fake_orientation_point, vr::HmdVector3_t* vectors) {
-	bone->position = vector3to4(vectors[point_one]);
-	bone->orientation = quaternionFromTwoVectors(&vectors[fake_orientation_point], &vectors[point_two]);
+	vector3to4(&bone->position, vectors[point_one]);
+	quaternionFromTwoVectors(&bone->orientation, &vectors[fake_orientation_point], &vectors[point_two]);
 }
 
 
 void CHandTracking::getRightHandBones(vr::VRBoneTransform_t* bones, float points[]) {
-	vr::HmdVector3_t * vectors = pointsToVector3(points);
+	vr::HmdVector3_t vectors[21];
+	for (int i = 0; i < 21; i++) {
+		vectors[i].v[0] = points[i * 3];
+		vectors[i].v[1] = points[i * 3 + 1];
+		vectors[i].v[2] = -points[i * 3 + 2];
+	}
 	for (int i = 0; i < 31; i++) {
 		switch (i) {
 		case HandSkeletonBone::eBone_Root:
@@ -219,8 +210,6 @@ void CHandTracking::getRightHandBones(vr::VRBoneTransform_t* bones, float points
 		case HandSkeletonBone::eBone_Aux_PinkyFinger:
 			assignBone(&bones[i], PointNaming::Base, PointNaming::Pinky3, vectors); break;
 		}
-
-
-
+		
 	}
 }

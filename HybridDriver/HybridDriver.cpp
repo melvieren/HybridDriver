@@ -107,6 +107,7 @@ static const char * const k_pch_Sample_SecondsFromVsyncToPhotons_Float = "second
 static const char * const k_pch_Sample_DisplayFrequency_Float = "displayFrequency";
 
 enum class TrackerType { Undefined = -1, LeftHand = 0, RightHand, LeftFoot, RightFoot, Waist, TrackersCount };
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -254,6 +255,13 @@ public:
 	DriverPose_t GetHandPose() {
 		DriverPose_t pose = { 0 };
 
+		if (g_handTracking.getState() != HandTrackingState::Initialized)
+		{
+			pose.poseIsValid = false;
+			pose.result = TrackingResult_Calibrating_InProgress;
+			return pose;
+		}
+
 		pose.poseIsValid = true;
 		pose.result = TrackingResult_Running_OK;
 		pose.deviceIsConnected = true;
@@ -282,20 +290,6 @@ public:
 		pose.vecPosition[2] = hmdPos.v[2] + static_cast<double>(handPos.v[2]);
 
 		pose.qRotation = hmdQuaternion;
-
-		if (m_type == TrackerType::RightHand) {
-			vr:VRBoneTransform_t bones[31];
-			g_handTracking.getRightHandBones(bones, m_rightHand);
-			vr::EVRInputError err = vr::VRDriverInput()->UpdateSkeletonComponent(g_handTracking.rightHandComponentHandler, vr::VRSkeletalMotionRange_WithoutController, bones, 31);
-			if (err != vr::VRInputError_None)
-			{
-				// Handle failure case
-				DriverLog("UpdateSkeletonComponent failed.  Error: %i\n", err);
-			}
-		 	
-		}
-
-
 		return pose;
 
 	}
@@ -304,7 +298,7 @@ public:
 	{
 		DriverPose_t pose = { 0 };
 
-		if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) return GetHandPose();
+		// if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) return GetHandPose();
 
 		if (!m_calibrationDone && !CalibrateJointPositions())
 		{
@@ -420,7 +414,7 @@ public:
 			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_unObjectId, GetPose(), sizeof(DriverPose_t));
 		}
 
-		if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) {
+		/*if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) {
 			if (g_handTracking.getState() == HandTrackingState::Initialized )
 			{
 				int handNumber = 0;
@@ -431,11 +425,26 @@ public:
 					}
 					else if(!hands[i].isLeft && m_type == TrackerType::RightHand) {
 						memcpy(m_rightHand, hands[i].points, sizeof(float) * 63);
+					    vr:VRBoneTransform_t bones[31];
+						g_handTracking.getRightHandBones(bones, m_rightHand);
+						vr::EVRInputError err = vr::VRDriverInput()->UpdateSkeletonComponent(g_handTracking.rightHandComponentHandler, vr::VRSkeletalMotionRange_WithController, bones, 31);
+						if (err != vr::VRInputError_None)
+						{
+							// Handle failure case
+							DriverLog("UpdateSkeletonComponent failed.  Error: %i\n", err);
+						}
+						err = vr::VRDriverInput()->UpdateSkeletonComponent(g_handTracking.rightHandComponentHandler, vr::VRSkeletalMotionRange_WithoutController, bones, 31);
+						if (err != vr::VRInputError_None)
+						{
+							// Handle failure case
+							DriverLog("UpdateSkeletonComponent failed.  Error: %i\n", err);
+						}
 					};
 					
 				}
 			}
 		}
+		*/
 
 		/* TODO: Update skeleton components */
 #endif
@@ -488,6 +497,7 @@ private:
 class CServerDriver_Sample: public IServerTrackedDeviceProvider
 {
 public:
+	~CServerDriver_Sample();
 	virtual EVRInitError Init( vr::IVRDriverContext *pDriverContext ) ;
 	virtual void Cleanup() ;
 	virtual const char * const *GetInterfaceVersions() { return vr::k_InterfaceVersions; }
@@ -499,6 +509,10 @@ public:
 private:
 	std::vector<CSampleControllerDriver*> m_pTrackers;
 };
+
+CServerDriver_Sample::~CServerDriver_Sample() {
+	DriverLog("Entered Driver Destructor");
+}
 
 CServerDriver_Sample g_serverDriverNull;
 
@@ -527,13 +541,13 @@ EVRInitError CServerDriver_Sample::Init( vr::IVRDriverContext *pDriverContext )
 
 void CServerDriver_Sample::Cleanup()
 {
-	CleanupDriverLog();
+	DriverLog("Entered Driver cleanup");
 
 	for (auto it = std::begin(m_pTrackers); it != std::end(m_pTrackers); ++it) {
 		(*it)->~CSampleControllerDriver();
 	}
-
 	m_pTrackers.clear();
+	//CleanupDriverLog();
 }
 
 
@@ -548,10 +562,16 @@ void CServerDriver_Sample::RunFrame()
 	while ( vr::VRServerDriverHost()->PollNextEvent( &vrEvent, sizeof( vrEvent ) ) )
 	{
 		for (auto it = std::begin(m_pTrackers); it != std::end(m_pTrackers); ++it) {
-			(*it)->ProcessEvent(vrEvent);
+			if (vrEvent.eventType == vr::VREvent_QuitAcknowledged) {
+				DriverLog("got %d event, shutting down", vrEvent.eventType);
+				Cleanup();
+			} else
+				(*it)->ProcessEvent(vrEvent);
+			
 		}
 	}
 }
+
 
 //-----------------------------------------------------------------------------
 // Purpose:

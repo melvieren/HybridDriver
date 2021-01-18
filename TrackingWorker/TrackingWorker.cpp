@@ -55,6 +55,5 @@ int main()
     handTracking.InitializeDefaultSensor();
     bodyTracking.InitializeDefaultSensor();
 
-
     while (true) Sleep(1000);
 }

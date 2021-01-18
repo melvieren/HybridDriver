@@ -13,7 +13,6 @@
 #include <windows.h>
 #endif
 
-#include "BodyTracking.h"
 #include "Bridge.h"
 
 #include "HandTracking.h"
@@ -38,7 +37,7 @@ using namespace vr;
 #endif
 
 HANDLE g_hSharedMem = NULL;
-void* g_SharedBuf = NULL;
+GlobalEventMsg_t* g_SharedBuf = NULL;
 
 void initSharedMemory(void)
 {
@@ -48,7 +47,7 @@ void initSharedMemory(void)
 		return;
 	}
 
-	g_SharedBuf = MapViewOfFile(g_hSharedMem, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
+	g_SharedBuf = (GlobalEventMsg_t *)MapViewOfFile(g_hSharedMem, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
 	if (g_SharedBuf == NULL)
 	{
 		CloseHandle(g_hSharedMem);
@@ -115,7 +114,6 @@ inline void HmdMatrix_SetIdentity( HmdMatrix34_t *pMatrix )
 	pMatrix->m[2][3] = 0.f;
 }
 
-CBodyTracking g_bodyTracking;
 CHandTracking g_handTracking;
 // keys for use with the settings API
 static const char * const k_pch_Sample_Section = "driver_sample";
@@ -243,10 +241,9 @@ public:
 		float kinectHeadPos[3] = { 0 };
 		bool isDataAvailable;
 
-		g_bodyTracking.GetHeadPosition(kinectHeadPos, &isDataAvailable);
-		if (!isDataAvailable) {
-			return false;
-		}
+		kinectHeadPos[0] = g_SharedBuf->bodyMsg.HeadPos.X;
+		kinectHeadPos[1] = g_SharedBuf->bodyMsg.HeadPos.Y;
+		kinectHeadPos[2] = g_SharedBuf->bodyMsg.HeadPos.Z;
 
 		TrackedDevicePose_t hmd_tracker;
 		VRServerDriverHost()->GetRawTrackedDevicePoses(0, &hmd_tracker, 1);
@@ -257,8 +254,8 @@ public:
 		hmdPos.v[1] = hmd_tracker.mDeviceToAbsoluteTracking.m[1][3];
 		hmdPos.v[2] = hmd_tracker.mDeviceToAbsoluteTracking.m[2][3];
 		
-		// if lighthouse is not synced yet, just bail out
-		if (hmdPos.v[0] == 0.0 && hmdPos.v[1] == 0.0 && hmdPos.v[2] == 0.0)
+		// if either of kinect/lighthouse is not synced, just bail out
+		if ((hmdPos.v[0] == 0.0 && hmdPos.v[1] == 0.0 && hmdPos.v[2] == 0.0) || (kinectHeadPos[0] == 0.0 && kinectHeadPos[1] == 0.0 && kinectHeadPos[2] == 0.0))
 			return false;
 
 		DriverLog("Calibration data:\n"\
@@ -339,8 +336,7 @@ public:
 		pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
 
 		// Retrieve actual joint positions from Kinect
-		BodyEventMsg_t *msg;
-		g_bodyTracking.Update(&msg);
+		BodyEventMsg_t* msg = &g_SharedBuf->bodyMsg;;
 
 		// Estimate joint positions in lighthouse coordinates
 		switch (m_type) {
@@ -544,9 +540,6 @@ EVRInitError CServerDriver_Sample::Init( vr::IVRDriverContext *pDriverContext )
 {
 	VR_INIT_SERVER_DRIVER_CONTEXT( pDriverContext );
 	InitDriverLog( vr::VRDriverLog() );
-
-	DriverLog("Initializing Kinect");
-	g_bodyTracking.InitializeDefaultSensor();
 
 	DriverLog("Adding %d virtual trackers", TrackerType::TrackersCount);
 

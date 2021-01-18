@@ -7,6 +7,8 @@
 #include <thread>
 #include <chrono>
 
+//#include <windows.h>
+#include <sstream>
 #if defined( _WINDOWS )
 #include <windows.h>
 #endif
@@ -105,7 +107,6 @@ static const char * const k_pch_Sample_SecondsFromVsyncToPhotons_Float = "second
 static const char * const k_pch_Sample_DisplayFrequency_Float = "displayFrequency";
 
 enum class TrackerType { Undefined = -1, LeftHand = 0, RightHand, LeftFoot, RightFoot, Waist, TrackersCount };
-
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -231,12 +232,16 @@ public:
 		hmdPos.v[1] = hmd_tracker.mDeviceToAbsoluteTracking.m[1][3];
 		hmdPos.v[2] = hmd_tracker.mDeviceToAbsoluteTracking.m[2][3];
 		
+		// if lighthouse is not synced yet, just bail out
+		if (hmdPos.v[0] == 0.0 && hmdPos.v[1] == 0.0 && hmdPos.v[2] == 0.0)
+			return false;
+
 		DriverLog("Calibration data:\n"\
 			"\tLighthouse position: (%f, %f, %f)\n"\
 			"\tKinect position: (%f, %f, %f)",
 			hmdPos.v[0], hmdPos.v[1], hmdPos.v[2],
 			kinectHeadPos[0], kinectHeadPos[1], kinectHeadPos[2]);
-
+		
 		for (int i = 0; i < 3; i++)
 			m_calibrationPos[i] = hmdPos.v[i] - kinectHeadPos[i];
 
@@ -325,32 +330,60 @@ public:
 			pose.vecPosition[0] = static_cast<double>(msg->FootLeftPos.X) + m_calibrationPos[0];
 			pose.vecPosition[1] = static_cast<double>(msg->FootLeftPos.Y) + m_calibrationPos[1];
 			pose.vecPosition[2] = static_cast<double>(msg->FootLeftPos.Z) + m_calibrationPos[2];
+			//memcpy(&pose.qRotation, &msg->FootLeftRot, sizeof(HmdQuaternion_t));
 			break;
 		case TrackerType::RightFoot:
 			pose.vecPosition[0] = static_cast<double>(msg->FootRightPos.X) + m_calibrationPos[0];
 			pose.vecPosition[1] = static_cast<double>(msg->FootRightPos.Y) + m_calibrationPos[1];
 			pose.vecPosition[2] = static_cast<double>(msg->FootRightPos.Z) + m_calibrationPos[2];
+			//memcpy(&pose.qRotation, &msg->FootRightRot, sizeof(HmdQuaternion_t));
 			break;
 		case TrackerType::LeftHand:
 			pose.vecPosition[0] = static_cast<double>(msg->HandLeftPos.X) + m_calibrationPos[0];
 			pose.vecPosition[1] = static_cast<double>(msg->HandLeftPos.Y) + m_calibrationPos[1];
 			pose.vecPosition[2] = static_cast<double>(msg->HandLeftPos.Z) + m_calibrationPos[2];
+			//memcpy(&pose.qRotation, &msg->HandLeftRot, sizeof(HmdQuaternion_t));
 			break;
 		case TrackerType::RightHand:
 			pose.vecPosition[0] = static_cast<double>(msg->HandRightPos.X) + m_calibrationPos[0];
 			pose.vecPosition[1] = static_cast<double>(msg->HandRightPos.Y) + m_calibrationPos[1];
 			pose.vecPosition[2] = static_cast<double>(msg->HandRightPos.Z) + m_calibrationPos[2];
+			//memcpy(&pose.qRotation, &msg->HandRightRot, sizeof(HmdQuaternion_t));
 			break;
 		case TrackerType::Waist:
 			pose.vecPosition[0] = static_cast<double>(msg->WaistPos.X) + m_calibrationPos[0];
 			pose.vecPosition[1] = static_cast<double>(msg->WaistPos.Y) + m_calibrationPos[1];
 			pose.vecPosition[2] = static_cast<double>(msg->WaistPos.Z) + m_calibrationPos[2];
+			//memcpy(&pose.qRotation, &msg->WaistRot, sizeof(HmdQuaternion_t));
 			break;
 		default:
 			pose.poseIsValid = false;
 			return pose;
 		}
 
+		TrackedDevicePose_t hmd_tracker;
+		VRServerDriverHost()->GetRawTrackedDevicePoses(0, &hmd_tracker, 1);
+
+		vr::HmdVector3d_t handPos;
+		handPos.v[0] = pose.vecPosition[0];
+		handPos.v[1] = pose.vecPosition[1];
+		handPos.v[2] = pose.vecPosition[2];
+		HmdQuaternion_t hmdQuaternion = GetHMDRotation(hmd_tracker.mDeviceToAbsoluteTracking);
+		handPos = MultiplyByQuaternion(hmdQuaternion, handPos);
+
+		// Get vec3 from matrix34
+		vr::HmdVector3_t hmdPos;
+		hmdPos.v[0] = hmd_tracker.mDeviceToAbsoluteTracking.m[0][3];
+		hmdPos.v[1] = hmd_tracker.mDeviceToAbsoluteTracking.m[1][3];
+		hmdPos.v[2] = hmd_tracker.mDeviceToAbsoluteTracking.m[2][3];
+
+		pose.vecPosition[0] = hmdPos.v[0] + static_cast<double>(handPos.v[0]);
+		pose.vecPosition[1] = hmdPos.v[1] + static_cast<double>(handPos.v[1]);
+		pose.vecPosition[2] = hmdPos.v[2] + static_cast<double>(handPos.v[2]);
+
+		pose.qRotation = hmdQuaternion;
+
+		/*
 		double cyaw = 0, cpitch = 0, croll = 0; // TODO: Get rotation values
 
 		//Convert yaw, pitch, roll to quaternion
@@ -367,6 +400,7 @@ public:
 		pose.qRotation.x = ct0 * ct3 * ct4 - ct1 * ct2 * ct5;
 		pose.qRotation.y = ct0 * ct2 * ct5 + ct1 * ct3 * ct4;
 		pose.qRotation.z = ct1 * ct2 * ct4 - ct0 * ct3 * ct5;
+		*/
 
 		return pose;
 	}
@@ -479,6 +513,8 @@ EVRInitError CServerDriver_Sample::Init( vr::IVRDriverContext *pDriverContext )
 	DriverLog("Adding %d virtual trackers", TrackerType::TrackersCount);
 
 	for (int i = 0; i < static_cast<int>(TrackerType::TrackersCount); i++) {
+		/*if (static_cast<TrackerType>(i) == TrackerType::RightHand)
+			continue;*/
 		CSampleControllerDriver* tracker = new CSampleControllerDriver();
 		tracker->SetControllerType(static_cast<TrackerType>(i));
 
@@ -494,7 +530,7 @@ void CServerDriver_Sample::Cleanup()
 	CleanupDriverLog();
 
 	for (auto it = std::begin(m_pTrackers); it != std::end(m_pTrackers); ++it) {
-		delete *it;
+		(*it)->~CSampleControllerDriver();
 	}
 
 	m_pTrackers.clear();

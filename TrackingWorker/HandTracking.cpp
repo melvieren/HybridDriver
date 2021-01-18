@@ -94,7 +94,7 @@ void CHandTracking::initialize() {
 			return;
 		}
 	}
-	std::cout << "HandTracking failed to start 5 times, stopped trying to start it, please check your HMD camera access";
+	std::cout << "HandTracking failed to start 5 times, stopped trying to start it, please check your HMD camera access" << std::endl;
 }
 
 bool CHandTracking::isDataAvailable() {

@@ -18,8 +18,14 @@
 
 #include "HandTracking.h"
 
-using namespace vr;
+#include <stdio.h>
+#include <conio.h>
+#include <tchar.h>
 
+#define BUF_SIZE 256
+TCHAR szName[] = TEXT("Global\HybridDriverSHM");
+
+using namespace vr;
 
 #if defined(_WIN32)
 #define HMD_DLL_EXPORT extern "C" __declspec( dllexport )
@@ -31,6 +37,24 @@ using namespace vr;
 #error "Unsupported Platform."
 #endif
 
+HANDLE g_hSharedMem = NULL;
+void* g_SharedBuf = NULL;
+
+void initSharedMemory(void)
+{
+	g_hSharedMem = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, szName);
+	if (g_hSharedMem == NULL)
+	{
+		return;
+	}
+
+	g_SharedBuf = MapViewOfFile(g_hSharedMem, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
+	if (g_SharedBuf == NULL)
+	{
+		CloseHandle(g_hSharedMem);
+		return;
+	}
+}
 
 HmdVector3d_t MultiplyByQuaternion(HmdQuaternion_t quat, HmdVector3d_t vec) {
 	float num = quat.x * 2.0f;

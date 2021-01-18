@@ -13,12 +13,12 @@
 
 using namespace vr;
 
-#define BUF_SIZE sizeof(BodyEventMsg_t) + sizeof(HandEventMsg_t)
+#define BUF_SIZE sizeof(GlobalEventMsg_t)
 
 TCHAR szName[] = TEXT("Global\HybridDriverSHM");
 
 HANDLE g_hSharedMem = NULL;
-void *g_SharedBuf = NULL;
+GlobalEventMsg_t *g_SharedBuf = NULL;
 
 int main()
 {
@@ -40,7 +40,7 @@ int main()
         return 1;
     }
 
-    g_SharedBuf = MapViewOfFile(g_hSharedMem, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
+    g_SharedBuf = (GlobalEventMsg_t *)MapViewOfFile(g_hSharedMem, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
     if (g_SharedBuf == NULL)
     {
         std::cout << "MapViewOfFile failed: " << GetLastError() << std::endl;
@@ -49,8 +49,11 @@ int main()
     }
     CHandTracking handTracking;
     CBodyTracking bodyTracking;
+    
     handTracking.InitializeDefaultSensor();
     bodyTracking.InitializeDefaultSensor();
+
+    bodyTracking.SetEventMsgBuffer(&g_SharedBuf->bodyMsg);
 
     while (true) Sleep(1000);
 }

@@ -30,7 +30,7 @@ CBodyTracking::CBodyTracking() :
     m_pKinectSensor(NULL),
     m_pCoordinateMapper(NULL),
     m_pBodyFrameReader(NULL),
-    m_Msg({ 0 }),
+    m_pMsg(NULL),
     m_thread(NULL),
     m_stop(false)
 {
@@ -65,78 +65,13 @@ CBodyTracking::~CBodyTracking()
     SafeRelease(m_pKinectSensor);
 }
 
-void CBodyTracking::GetHeadPosition(float headPosition[3], bool* pIsDataAvailable)
-{
-    *pIsDataAvailable = false;
-
-    if (!m_pBodyFrameReader)
-    {
-        return;
-    }
-
-    IBodyFrame* pBodyFrame = NULL;
-
-    HRESULT hr = m_pBodyFrameReader->AcquireLatestFrame(&pBodyFrame);
-
-    if (SUCCEEDED(hr))
-    {
-        INT64 nTime = 0;
-
-        hr = pBodyFrame->get_RelativeTime(&nTime);
-
-        IBody* ppBodies[BODY_COUNT] = { 0 };
-
-        if (SUCCEEDED(hr))
-        {
-            hr = pBodyFrame->GetAndRefreshBodyData(_countof(ppBodies), ppBodies);
-        }
-
-        if (SUCCEEDED(hr))
-        {
-            if (m_pCoordinateMapper)
-            {
-                for (int i = 0; i < BODY_COUNT; ++i)
-                {
-                    IBody* pBody = ppBodies[i];
-                    if (pBody)
-                    {
-                        BOOLEAN bTracked = false;
-                        HRESULT hr = pBody->get_IsTracked(&bTracked);
-
-                        if (SUCCEEDED(hr) && bTracked)
-                        {
-                            Joint joints[JointType_Count];
-                            hr = pBody->GetJoints(_countof(joints), joints);
-                            if (SUCCEEDED(hr))
-                            {
-                                headPosition[0] = joints[JointType_Head].Position.X; // static_cast<double>(joints[JointType_Head].Position.X);
-                                headPosition[1] = joints[JointType_Head].Position.Y; // static_cast<double>(joints[JointType_Head].Position.Y);
-                                headPosition[2] = joints[JointType_Head].Position.Z; // static_cast<double>(joints[JointType_Head].Position.Z);
-
-                                *pIsDataAvailable = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        for (int i = 0; i < _countof(ppBodies); ++i)
-        {
-            SafeRelease(ppBodies[i]);
-        }
-    }
-
-    SafeRelease(pBodyFrame);
-}
-
 /// <summary>
-/// Main processing function
+/// Set pointer to shm which will be used to update body information
+/// <param name="pMsg">Pointer to SHM</param>
 /// </summary>
-void CBodyTracking::Update(BodyEventMsg_t** ppMsg)
+void CBodyTracking::SetEventMsgBuffer(BodyEventMsg_t* pMsg)
 {
-    *ppMsg = &m_Msg;
+    m_pMsg = pMsg;
 }
 
 /// <summary>
@@ -168,7 +103,7 @@ void CBodyTracking::Update_Internal()
 
             if (SUCCEEDED(hr))
             {
-                ProcessBody(nTime, BODY_COUNT, ppBodies, &m_Msg);
+                ProcessBody(nTime, BODY_COUNT, ppBodies, m_pMsg);
             }
 
             for (int i = 0; i < _countof(ppBodies); ++i)

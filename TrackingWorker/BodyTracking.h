@@ -27,14 +27,10 @@ public:
     ~CBodyTracking();
 
     /// <summary>
-    /// Retrieves current head position
+    /// Set pointer to shm which will be used to update body information
+    /// <param name="pMsg">Pointer to SHM</param>
     /// </summary>
-    void GetHeadPosition(float headPosition[3], bool* pIsDataAvailable);
-
-    /// <summary>
-    /// Main processing function
-    /// </summary>
-    void                    Update(BodyEventMsg_t** pMsg);
+    void                    SetEventMsgBuffer(BodyEventMsg_t* pMsg);
 
     /// <summary>
     /// Initializes the default Kinect sensor
@@ -69,7 +65,7 @@ private:
 
     // Body reader
     IBodyFrameReader* m_pBodyFrameReader;
-    BodyEventMsg_t m_Msg;
+    BodyEventMsg_t *m_pMsg;
 
     std::thread* m_thread;
     bool m_stop;

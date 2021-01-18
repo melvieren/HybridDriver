@@ -41,3 +41,8 @@ typedef struct {
 	Point3D_t RightHandPos;
 	HandTrackingState state;
 } HandEventMsg_t;
+
+typedef struct {
+	HandEventMsg_t handMsg;
+	BodyEventMsg_t bodyMsg;
+} GlobalEventMsg_t;

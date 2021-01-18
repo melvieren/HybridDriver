@@ -3,7 +3,7 @@
 #include <thread>
 
 #include <interface_gesture.hpp>
-#include <openvr_driver.h>
+#include <openvr.h>
 
 enum class HandTrackingState {
     Unitialized,
@@ -61,8 +61,8 @@ public:
     /// <returns>True if new data, else false</returns>
     void getRightHandBones(vr::VRBoneTransform_t* bones, float points[]);
 
-    vr::VRInputComponentHandle_t leftHandComponentHandler;
-    vr::VRInputComponentHandle_t rightHandComponentHandler;
+    /*vr::VRInputComponentHandle_t leftHandComponentHandler;
+    vr::VRInputComponentHandle_t rightHandComponentHandler;*/
     std::thread* m_initThread;
 
 private:

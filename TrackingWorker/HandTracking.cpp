@@ -4,6 +4,7 @@
 #include "interface_gesture.hpp"
 
 #include "HandTracking.h"
+#include "Bridge.h"
 
 inline float dotProduct(vr::HmdVector3_t v[], vr::HmdVector3_t u[])
 {
@@ -75,7 +76,7 @@ void CHandTracking::InitializeDefaultSensor() {
 	UseExternalTransform(true);
 	GestureFailure result = StartGestureDetection(&option);
 	if (result != GestureFailureNone) {
-		std::cout << " HandTracking | Initilization of HandTracking failed" << std::endl;
+		std::cout << " HandTracking | Initilization of HandTracking failed, error code " << result << std::endl;
 		m_state = HandTrackingState::Error;
 		StopGestureDetection();
 		return;
@@ -115,7 +116,10 @@ void CHandTracking::updateHandTracking() {
 		else if (frameIndex == lastFrameIndex)
 			continue;
 
-		if (m_handCount > 0) m_isDataAvailable = true;
+		if (m_handCount > 0) {
+			std::cout << "Found " << m_handCount << " hand(s) " << std::endl;
+			m_isDataAvailable = true;
+		}
 		lastFrameIndex = frameIndex;
 	}
 	std::cout << " HandTracking | Updated thread ended" << std::endl;

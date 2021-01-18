@@ -52,6 +52,7 @@ inline void quaternionFromTwoVectors(vr::HmdQuaternionf_t* out, vr::HmdVector3_t
 CHandTracking::CHandTracking() :
 	m_isDataAvailable(false),
 	m_handCount(0),
+	m_startTryCount(0),
 	m_stop(false),
 	m_gestureRecognition(NULL),
 	m_initThread(NULL),
@@ -70,27 +71,30 @@ CHandTracking::~CHandTracking() {
 
 void CHandTracking::InitializeDefaultSensor() {
 	m_state = HandTrackingState::Initializing;
-	GestureOption option;
-	// option.maxFPS = 60;
-	// option.mode = GestureMode3DPoint;
-	UseExternalTransform(true);
-	GestureFailure result = StartGestureDetection(&option);
-	if (result != GestureFailureNone) {
-		std::cout << " HandTracking | Initilization of HandTracking failed, error code " << result << std::endl;
-		m_state = HandTrackingState::Error;
-		StopGestureDetection();
-		return;
-	}
-
-	m_gestureRecognition = new std::thread(&CHandTracking::updateHandTracking, this);
-
-	std::cout << " HandTracking | Initilization of HandTracking successful" << std::endl;
-	m_state = HandTrackingState::Initialized;
-	return;
+	std::thread * init = new std::thread(&CHandTracking::initialize, this);
 }
 
 void CHandTracking::initialize() {
-
+	while (m_startTryCount < 5) {
+		GestureOption option;
+		// option.maxFPS = 60;
+		// option.mode = GestureMode3DPoint;
+		UseExternalTransform(true);
+		GestureFailure result = StartGestureDetection(&option);
+		if (result != GestureFailureNone) {
+			std::cout << " HandTracking | Initilization of HandTracking failed, error code " << result << std::endl;
+			m_state = HandTrackingState::Error;
+			m_startTryCount++;
+			Sleep(5000);
+		}
+		else {
+			m_gestureRecognition = new std::thread(&CHandTracking::updateHandTracking, this);
+			std::cout << " HandTracking | Initilization of HandTracking successful" << std::endl;
+			m_state = HandTrackingState::Initialized;
+			return;
+		}
+	}
+	std::cout << "HandTracking failed to start 5 times, stopped trying to start it, please check your HMD camera access";
 }
 
 bool CHandTracking::isDataAvailable() {

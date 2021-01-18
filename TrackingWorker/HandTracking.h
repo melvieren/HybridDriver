@@ -80,6 +80,8 @@ private:
 
     HandTrackingState m_state;
 
+    int startTryCount;
+
 };
 
 enum PointNaming

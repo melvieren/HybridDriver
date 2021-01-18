@@ -47,18 +47,8 @@ int main()
         CloseHandle(g_hSharedMem);
         return 1;
     }
-    bool started = false;
-    while (!started) {
-        vr::VREvent_t vrEvent;
-        if (VROverlay()->PollNextOverlayEvent(handle, &vrEvent, sizeof(vr::VREvent_t))) {
-            std::cout << "Got event number " << vrEvent.eventType << std::endl;
-            if (vrEvent.eventType == vr::VREvent_DashboardActivated) started = true;
-            else Sleep(10);
-        }
-    }
     CHandTracking handTracking;
     CBodyTracking bodyTracking;
-
     handTracking.InitializeDefaultSensor();
     bodyTracking.InitializeDefaultSensor();
 

@@ -80,7 +80,7 @@ private:
 
     HandTrackingState m_state;
 
-    int startTryCount;
+    int m_startTryCount;
 
 };
 

@@ -2,6 +2,7 @@
 
 #include <Kinect.h>
 #include <openvr.h>
+#include <interface_gesture.hpp>
 
 typedef struct {
 	float X;
@@ -39,6 +40,8 @@ typedef struct {
 	vr::VRBoneTransform_t bonesRightHand[31];
 	Point3D_t RightHandPos;
 	uint32_t state;
+	GestureType leftHandGesture;
+	GestureType rightHandGesture;
 } HandEventMsg_t;
 
 typedef struct {

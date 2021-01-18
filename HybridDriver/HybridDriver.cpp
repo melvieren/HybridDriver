@@ -17,6 +17,8 @@
 
 #include "HandTracking.h"
 
+#include <interface_gesture.hpp>
+
 #include <stdio.h>
 #include <conio.h>
 #include <tchar.h>
@@ -41,7 +43,7 @@ GlobalEventMsg_t* g_SharedBuf = NULL;
 
 int initSharedMemory(void)
 {
-	DriverLog("Initializing SHM");
+	//DriverLog("Initializing SHM");
 
 	g_hSharedMem = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, szName);
 	if (g_hSharedMem == NULL)
@@ -167,7 +169,7 @@ public:
 		m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer(m_unObjectId);
 
 
-		vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_DeviceClass_Int32, TrackedDeviceClass_GenericTracker);
+		
 
 		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_ModelNumber_String, m_sModelNumber.c_str());
 
@@ -176,6 +178,14 @@ public:
 
 		if (m_type == TrackerType::RightHand) {
 			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_RightHand);
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ControllerType_String, "vive_controller");
+
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ModelNumber_String, "ViveMV");
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ManufacturerName_String, "HTC");
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "vr_controller_vive_1_5");
+
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_TrackingSystemName_String, "VR Controller");
+			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_DeviceClass_Int32, TrackedDeviceClass_Controller);
 			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "{HybridDriver}/rendermodels/right_hand_test");
 			vr::EVRInputError err = vr::VRDriverInput()->CreateSkeletonComponent(m_ulPropertyContainer, "/input/skeleton/right", "/skeleton/hand/right", "/pose/raw", EVRSkeletalTrackingLevel::VRSkeletalTracking_Full, NULL, 31, &m_rightHandHandler);
 			if (err != vr::VRInputError_None)
@@ -186,10 +196,18 @@ public:
 		}
 		else if (m_type == TrackerType::LeftHand) {
 			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_LeftHand);
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ControllerType_String, "vive_controller");
+
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ModelNumber_String, "ViveMV");
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_ManufacturerName_String, "HTC");
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "vr_controller_vive_1_5");
+
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_TrackingSystemName_String, "VR Controller");
 			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "{HybridDriver}/rendermodels/right_hand_test");
 
 		}
 		else {
+			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_DeviceClass_Int32, TrackedDeviceClass_GenericTracker);
 			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_OptOut);
 			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "arrow");
 		}
@@ -436,9 +454,9 @@ public:
 		// in to UpdateBooleanComponent. This could happen in RunFrame or on a thread of your own that's reading USB
 		// state. There's no need to update input state unless it changes, but it doesn't do any harm to do so.
 
-		vr::VRDriverInput()->UpdateBooleanComponent(m_compA, (0x8000 & GetAsyncKeyState('A')) != 0, 0);
+		/*vr::VRDriverInput()->UpdateBooleanComponent(m_compA, (0x8000 & GetAsyncKeyState('A')) != 0, 0);
 		vr::VRDriverInput()->UpdateBooleanComponent(m_compB, (0x8000 & GetAsyncKeyState('B')) != 0, 0);
-		vr::VRDriverInput()->UpdateBooleanComponent(m_compC, (0x8000 & GetAsyncKeyState('C')) != 0, 0);
+		vr::VRDriverInput()->UpdateBooleanComponent(m_compC, (0x8000 & GetAsyncKeyState('C')) != 0, 0);*/
 
 		if (m_unObjectId != vr::k_unTrackedDeviceIndexInvalid) {
 			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_unObjectId, GetPose(), sizeof(DriverPose_t));
@@ -452,6 +470,9 @@ public:
 					//Todo: handle left hand
 				}
 				else if (m_type == TrackerType::RightHand) {
+					vr::VRDriverInput()->UpdateBooleanComponent(m_compA, msg->rightHandGesture == GestureTypeOK, 0);
+					vr::VRDriverInput()->UpdateBooleanComponent(m_compB, msg->rightHandGesture == GestureTypeVictory, 0);
+					vr::VRDriverInput()->UpdateBooleanComponent(m_compC, msg->rightHandGesture == GestureTypeFist, 0);
 					vr::EVRInputError err = vr::VRDriverInput()->UpdateSkeletonComponent(m_rightHandHandler, vr::VRSkeletalMotionRange_WithController, msg->bonesRightHand, 31);
 					if (err != vr::VRInputError_None)
 					{
@@ -552,7 +573,7 @@ EVRInitError CServerDriver_Sample::Init( vr::IVRDriverContext *pDriverContext )
 		CSampleControllerDriver* tracker = new CSampleControllerDriver();
 		tracker->SetControllerType(static_cast<TrackerType>(i));
 
-		vr::VRServerDriverHost()->TrackedDeviceAdded(tracker->GetSerialNumber().c_str(), vr::TrackedDeviceClass_GenericTracker, tracker);
+		vr::VRServerDriverHost()->TrackedDeviceAdded(tracker->GetSerialNumber().c_str(), vr::TrackedDeviceClass_Controller, tracker);
 		m_pTrackers.push_back(tracker);
 	}
 
@@ -581,10 +602,6 @@ void CServerDriver_Sample::RunFrame()
 	while ( vr::VRServerDriverHost()->PollNextEvent( &vrEvent, sizeof( vrEvent ) ) )
 	{
 		for (auto it = std::begin(m_pTrackers); it != std::end(m_pTrackers); ++it) {
-			if (vrEvent.eventType == vr::VREvent_QuitAcknowledged) {
-				DriverLog("got %d event, shutting down", vrEvent.eventType);
-				Cleanup();
-			} else
 				(*it)->ProcessEvent(vrEvent);
 			
 		}

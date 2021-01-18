@@ -110,6 +110,8 @@ void CHandTracking::initialize() {
 void CHandTracking::SetEventMsgBuffer(HandEventMsg_t* pMsg)
 {
 	m_pMsg = pMsg;
+	m_pMsg->leftHandGesture = GestureTypeUnknown;
+	m_pMsg->rightHandGesture = GestureTypeUnknown;
 }
 
 bool CHandTracking::isDataAvailable() {
@@ -127,6 +129,7 @@ void CHandTracking::updateHandTracking() {
 	while (!m_stop) {
 		int frameIndex = -1;
 		m_handCount = GetGestureResult((const GestureResult**)&m_handtrackingPoints, &frameIndex);
+		
 		using namespace std::chrono_literals;
 		std::this_thread::sleep_for(500ns);
 		if (frameIndex < 0) {
@@ -141,12 +144,14 @@ void CHandTracking::updateHandTracking() {
 		}
 		for (int i = 0; i < m_handCount; i++) {
 			if (m_handtrackingPoints[i].isLeft) {
+				m_pMsg->leftHandGesture = m_handtrackingPoints[i].gesture;
 				m_pMsg->LeftHandPos.X = m_handtrackingPoints[i].points[0];
 				m_pMsg->LeftHandPos.Y = m_handtrackingPoints[i].points[1];
 				m_pMsg->LeftHandPos.Z = m_handtrackingPoints[i].points[2];
 				m_leftHandBonesNeedUpdate = true;
 			}
 			else {
+				m_pMsg->rightHandGesture = m_handtrackingPoints[i].gesture;
 				m_pMsg->RightHandPos.X = m_handtrackingPoints[i].points[0];
 				m_pMsg->RightHandPos.Y = m_handtrackingPoints[i].points[1];
 				m_pMsg->RightHandPos.Z = m_handtrackingPoints[i].points[2];
@@ -183,9 +188,9 @@ void CHandTracking::updateRightHandBones() {
 		else memcpy(points, m_handtrackingPoints[1].points, sizeof(float) * 63);
 		vr::HmdVector3_t vectors[21];
 		for (int i = 0; i < 21; i++) {
-			vectors[i].v[0] = points[i * 3];
-			vectors[i].v[1] = points[i * 3 + 1];
-			vectors[i].v[2] = -points[i * 3 + 2];
+			vectors[i].v[0] = points[i * 3] - points[0];
+			vectors[i].v[1] = points[i * 3 + 1] - points[1];
+			vectors[i].v[2] = -points[i * 3 + 2] - points[2];
 		}
 		for (int i = 0; i < 31; i++) {
 			switch (i) {

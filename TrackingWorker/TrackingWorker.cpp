@@ -22,7 +22,7 @@ void *g_SharedBuf = NULL;
 
 int main()
 {
-    EVRInitError error= VRInitError_None;
+    EVRInitError error = VRInitError_None;
 
     std::cout << "=== Tracking Worker Console ===" << std::endl << std::endl;
 
@@ -40,7 +40,7 @@ int main()
         return 1;
     }
 
-    g_SharedBuf = (LPTSTR)MapViewOfFile(g_hSharedMem, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
+    g_SharedBuf = MapViewOfFile(g_hSharedMem, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
     if (g_SharedBuf == NULL)
     {
         std::cout << "MapViewOfFile failed: " << GetLastError() << std::endl;

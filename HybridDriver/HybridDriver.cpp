@@ -25,9 +25,7 @@
 #define BUF_SIZE 256
 TCHAR szName[] = TEXT("Global\HybridDriverSHM");
 
-
 using namespace vr;
-
 
 #if defined(_WIN32)
 #define HMD_DLL_EXPORT extern "C" __declspec( dllexport )
@@ -40,39 +38,22 @@ using namespace vr;
 #endif
 
 HANDLE g_hSharedMem = NULL;
+void* g_SharedBuf = NULL;
 
 void initSharedMemory(void)
 {
-	HANDLE hMapFile;
-	LPCTSTR pBuf;
-
-	hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, szName);
-
-	if (hMapFile == NULL)
+	g_hSharedMem = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, szName);
+	if (g_hSharedMem == NULL)
 	{
-		_tprintf(TEXT("Could not open file mapping object (%d).\n"),
-			GetLastError());
 		return;
 	}
 
-	pBuf = (LPTSTR)MapViewOfFile(hMapFile, // handle to map object
-		FILE_MAP_ALL_ACCESS,  // read/write permission
-		0,
-		0,
-		BUF_SIZE);
-
-	if (pBuf == NULL)
+	g_SharedBuf = MapViewOfFile(g_hSharedMem, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
+	if (g_SharedBuf == NULL)
 	{
-		_tprintf(TEXT("Could not map view of file (%d).\n"),
-			GetLastError());
-
-		CloseHandle(hMapFile);
-
+		CloseHandle(g_hSharedMem);
 		return;
 	}
-
-	UnmapViewOfFile(pBuf);
-	CloseHandle(hMapFile);
 }
 
 HmdVector3d_t MultiplyByQuaternion(HmdQuaternion_t quat, HmdVector3d_t vec) {

@@ -182,7 +182,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="driverlog.cpp" />
-    <ClCompile Include="HandTracking.cpp" />
     <ClCompile Include="HybridDriver.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

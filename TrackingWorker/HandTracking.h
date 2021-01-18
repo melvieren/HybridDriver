@@ -5,6 +5,8 @@
 #include <interface_gesture.hpp>
 #include <openvr.h>
 
+#include "Bridge.h"
+
 enum class HandTrackingState {
     Unitialized,
     Initializing,
@@ -59,7 +61,8 @@ public:
     /// <param name="handCount">(in) array of 63 coordinates that compose 21 points</param>
     /// </summary>
     /// <returns>True if new data, else false</returns>
-    void getRightHandBones(vr::VRBoneTransform_t* bones, float points[]);
+
+    void SetEventMsgBuffer(HandEventMsg_t* pMsg);
 
     /*vr::VRInputComponentHandle_t leftHandComponentHandler;
     vr::VRInputComponentHandle_t rightHandComponentHandler;*/
@@ -67,6 +70,8 @@ public:
 
 private:
     void updateHandTracking();
+
+    void updateRightHandBones();
 
     void initialize();
 
@@ -81,6 +86,16 @@ private:
     HandTrackingState m_state;
 
     int m_startTryCount;
+
+    HandEventMsg_t* m_pMsg;
+
+
+    std::thread* m_leftHandBoneUpdater;
+    bool m_leftHandBonesNeedUpdate;
+    std::thread* m_rightHandBoneUpdater;
+    bool m_rightHandBonesNeedUpdate;
+
+
 
 };
 

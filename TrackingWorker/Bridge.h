@@ -1,8 +1,7 @@
 #pragma once
 
 #include <Kinect.h>
-
-#include "HandTracking.h"
+#include <openvr.h>
 
 typedef struct {
 	float X;
@@ -39,7 +38,7 @@ typedef struct {
 	Point3D_t LeftHandPos;
 	vr::VRBoneTransform_t bonesRightHand[31];
 	Point3D_t RightHandPos;
-	HandTrackingState state;
+	uint32_t state;
 } HandEventMsg_t;
 
 typedef struct {

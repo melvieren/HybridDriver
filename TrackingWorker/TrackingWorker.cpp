@@ -52,8 +52,9 @@ int main()
     CBodyTracking bodyTracking;
     
     bodyTracking.SetEventMsgBuffer(&g_SharedBuf->bodyMsg);
+    handTracking.SetEventMsgBuffer(&g_SharedBuf->handMsg);
 
-    //handTracking.InitializeDefaultSensor();
+    handTracking.InitializeDefaultSensor();
     bodyTracking.InitializeDefaultSensor();
 
     while (true) Sleep(1000);

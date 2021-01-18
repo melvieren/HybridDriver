@@ -118,8 +118,6 @@ inline void HmdMatrix_SetIdentity( HmdMatrix34_t *pMatrix )
 	pMatrix->m[2][2] = 1.f;
 	pMatrix->m[2][3] = 0.f;
 }
-
-CHandTracking g_handTracking;
 // keys for use with the settings API
 static const char * const k_pch_Sample_Section = "driver_sample";
 static const char * const k_pch_Sample_SerialNumber_String = "serialNumber";
@@ -163,15 +161,15 @@ public:
 		m_sSerialNumber = "HybridController_" + std::to_string(static_cast<int>(type));
 	}
 
-	virtual EVRInitError Activate( vr::TrackedDeviceIndex_t unObjectId )
+	virtual EVRInitError Activate(vr::TrackedDeviceIndex_t unObjectId)
 	{
 		m_unObjectId = unObjectId;
-		m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer( m_unObjectId );
+		m_ulPropertyContainer = vr::VRProperties()->TrackedDeviceToPropertyContainer(m_unObjectId);
 
-		
+
 		vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_DeviceClass_Int32, TrackedDeviceClass_GenericTracker);
 
-		vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_ModelNumber_String, m_sModelNumber.c_str() );
+		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_ModelNumber_String, m_sModelNumber.c_str());
 
 		uint64_t supportedButtons = 0xFFFFFFFFFFFFFFFFULL;
 		vr::VRProperties()->SetUint64Property(m_ulPropertyContainer, vr::Prop_SupportedButtons_Uint64, supportedButtons);
@@ -179,7 +177,7 @@ public:
 		if (m_type == TrackerType::RightHand) {
 			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_RightHand);
 			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "{HybridDriver}/rendermodels/right_hand_test");
-			vr::EVRInputError err = vr::VRDriverInput()->CreateSkeletonComponent(m_ulPropertyContainer, "/input/skeleton/right", "/skeleton/hand/right", "/pose/raw", EVRSkeletalTrackingLevel::VRSkeletalTracking_Full, NULL, 31, &g_handTracking.rightHandComponentHandler);
+			vr::EVRInputError err = vr::VRDriverInput()->CreateSkeletonComponent(m_ulPropertyContainer, "/input/skeleton/right", "/skeleton/hand/right", "/pose/raw", EVRSkeletalTrackingLevel::VRSkeletalTracking_Full, NULL, 31, &m_rightHandHandler);
 			if (err != vr::VRInputError_None)
 			{
 				// Handle failure case
@@ -195,19 +193,19 @@ public:
 			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_OptOut);
 			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "arrow");
 		}
-			
+
 
 		// this file tells the UI what to show the user for binding this controller as well as what default bindings should
 		// be for legacy or other apps
-		vr::VRProperties()->SetStringProperty( m_ulPropertyContainer, Prop_InputProfilePath_String, "{sample}/input/mycontroller_profile.json" );
+		vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_InputProfilePath_String, "{sample}/input/mycontroller_profile.json");
 
 		// create all the input components
-		vr::VRDriverInput()->CreateBooleanComponent( m_ulPropertyContainer, "/input/a/click", &m_compA );
-		vr::VRDriverInput()->CreateBooleanComponent( m_ulPropertyContainer, "/input/b/click", &m_compB );
-		vr::VRDriverInput()->CreateBooleanComponent( m_ulPropertyContainer, "/input/c/click", &m_compC );
+		vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/a/click", &m_compA);
+		vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/b/click", &m_compB);
+		vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/c/click", &m_compC);
 
 		// create our haptic component
-		vr::VRDriverInput()->CreateHapticComponent( m_ulPropertyContainer, "/output/haptic", &m_compHaptic );
+		vr::VRDriverInput()->CreateHapticComponent(m_ulPropertyContainer, "/output/haptic", &m_compHaptic);
 
 		/* TODO: Create skeleton components */
 
@@ -224,7 +222,7 @@ public:
 	{
 	}
 
-	void *GetComponent( const char *pchComponentNameAndVersion )
+	void* GetComponent(const char* pchComponentNameAndVersion)
 	{
 		// override this to add a component to a driver
 		return NULL;
@@ -235,9 +233,9 @@ public:
 	}
 
 	/** debug request from a client */
-	virtual void DebugRequest( const char *pchRequest, char *pchResponseBuffer, uint32_t unResponseBufferSize )
+	virtual void DebugRequest(const char* pchRequest, char* pchResponseBuffer, uint32_t unResponseBufferSize)
 	{
-		if ( unResponseBufferSize >= 1 )
+		if (unResponseBufferSize >= 1)
 			pchResponseBuffer[0] = 0;
 	}
 
@@ -258,7 +256,7 @@ public:
 		hmdPos.v[0] = hmd_tracker.mDeviceToAbsoluteTracking.m[0][3];
 		hmdPos.v[1] = hmd_tracker.mDeviceToAbsoluteTracking.m[1][3];
 		hmdPos.v[2] = hmd_tracker.mDeviceToAbsoluteTracking.m[2][3];
-		
+
 		// if either of kinect/lighthouse is not synced, just bail out
 		if ((hmdPos.v[0] == 0.0 && hmdPos.v[1] == 0.0 && hmdPos.v[2] == 0.0) || (kinectHeadPos[0] == 0.0 && kinectHeadPos[1] == 0.0 && kinectHeadPos[2] == 0.0))
 			return false;
@@ -268,7 +266,7 @@ public:
 			"\tKinect position: (%f, %f, %f)",
 			hmdPos.v[0], hmdPos.v[1], hmdPos.v[2],
 			kinectHeadPos[0], kinectHeadPos[1], kinectHeadPos[2]);
-		
+
 		for (int i = 0; i < 3; i++)
 			m_calibrationPos[i] = hmdPos.v[i] - kinectHeadPos[i];
 
@@ -280,8 +278,9 @@ public:
 
 	DriverPose_t GetHandPose() {
 		DriverPose_t pose = { 0 };
+		HandEventMsg_t* msg = &g_SharedBuf->handMsg;
 
-		if (g_handTracking.getState() != HandTrackingState::Initialized)
+		if (msg->state != HandTrackingState::Initialized)
 		{
 			pose.poseIsValid = false;
 			pose.result = TrackingResult_Calibrating_InProgress;
@@ -299,9 +298,9 @@ public:
 		VRServerDriverHost()->GetRawTrackedDevicePoses(0, &hmd_tracker, 1);
 
 		vr::HmdVector3d_t handPos;
-		handPos.v[0] = m_type == TrackerType::LeftHand ? m_leftHand[0] : m_rightHand[0];
-		handPos.v[1] = m_type == TrackerType::LeftHand ? m_leftHand[1] : m_rightHand[1];
-		handPos.v[2] = - (m_type == TrackerType::LeftHand ? m_leftHand[2] : m_rightHand[2]);
+		handPos.v[0] = m_type == TrackerType::LeftHand ? msg->LeftHandPos.X : msg->RightHandPos.X;
+		handPos.v[1] = m_type == TrackerType::LeftHand ? msg->LeftHandPos.Y : msg->RightHandPos.Y;
+		handPos.v[2] = -(m_type == TrackerType::LeftHand ? msg->LeftHandPos.Z : msg->RightHandPos.Z);
 		HmdQuaternion_t hmdQuaternion = GetHMDRotation(hmd_tracker.mDeviceToAbsoluteTracking);
 		handPos = MultiplyByQuaternion(hmdQuaternion, handPos);
 
@@ -330,7 +329,7 @@ public:
 			return pose;
 		}
 
-		// if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) return GetHandPose();
+		if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) return GetHandPose();
 
 		if (!m_calibrationDone && !CalibrateJointPositions())
 		{
@@ -437,45 +436,38 @@ public:
 		// in to UpdateBooleanComponent. This could happen in RunFrame or on a thread of your own that's reading USB
 		// state. There's no need to update input state unless it changes, but it doesn't do any harm to do so.
 
-		vr::VRDriverInput()->UpdateBooleanComponent( m_compA, (0x8000 & GetAsyncKeyState( 'A' )) != 0, 0 );
-		vr::VRDriverInput()->UpdateBooleanComponent( m_compB, (0x8000 & GetAsyncKeyState( 'B' )) != 0, 0 );
-		vr::VRDriverInput()->UpdateBooleanComponent( m_compC, (0x8000 & GetAsyncKeyState( 'C' )) != 0, 0 );
+		vr::VRDriverInput()->UpdateBooleanComponent(m_compA, (0x8000 & GetAsyncKeyState('A')) != 0, 0);
+		vr::VRDriverInput()->UpdateBooleanComponent(m_compB, (0x8000 & GetAsyncKeyState('B')) != 0, 0);
+		vr::VRDriverInput()->UpdateBooleanComponent(m_compC, (0x8000 & GetAsyncKeyState('C')) != 0, 0);
 
 		if (m_unObjectId != vr::k_unTrackedDeviceIndexInvalid) {
 			vr::VRServerDriverHost()->TrackedDevicePoseUpdated(m_unObjectId, GetPose(), sizeof(DriverPose_t));
 		}
 
-		/*if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) {
-			if (g_handTracking.getState() == HandTrackingState::Initialized )
+		if (g_SharedBuf != NULL && (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand)) {
+			HandEventMsg_t* msg = &g_SharedBuf->handMsg;
+			if (msg->state == HandTrackingState::Initialized)
 			{
-				int handNumber = 0;
-				GestureResult* hands = g_handTracking.getHandTrackingData(&handNumber);
-				for (int i = 0; i < handNumber; i++) {
-					if (hands[i].isLeft && m_type == TrackerType::LeftHand) {
-						memcpy(m_leftHand, hands[i].points, sizeof(float) * 63);
-					}
-					else if(!hands[i].isLeft && m_type == TrackerType::RightHand) {
-						memcpy(m_rightHand, hands[i].points, sizeof(float) * 63);
-					    vr:VRBoneTransform_t bones[31];
-						g_handTracking.getRightHandBones(bones, m_rightHand);
-						vr::EVRInputError err = vr::VRDriverInput()->UpdateSkeletonComponent(g_handTracking.rightHandComponentHandler, vr::VRSkeletalMotionRange_WithController, bones, 31);
-						if (err != vr::VRInputError_None)
-						{
-							// Handle failure case
-							DriverLog("UpdateSkeletonComponent failed.  Error: %i\n", err);
-						}
-						err = vr::VRDriverInput()->UpdateSkeletonComponent(g_handTracking.rightHandComponentHandler, vr::VRSkeletalMotionRange_WithoutController, bones, 31);
-						if (err != vr::VRInputError_None)
-						{
-							// Handle failure case
-							DriverLog("UpdateSkeletonComponent failed.  Error: %i\n", err);
-						}
-					};
-					
+				if (m_type == TrackerType::LeftHand) {
+					//Todo: handle left hand
 				}
+				else if (m_type == TrackerType::RightHand) {
+					vr::EVRInputError err = vr::VRDriverInput()->UpdateSkeletonComponent(m_rightHandHandler, vr::VRSkeletalMotionRange_WithController, msg->bonesRightHand, 31);
+					if (err != vr::VRInputError_None)
+					{
+						// Handle failure case
+						DriverLog("UpdateSkeletonComponent failed.  Error: %i\n", err);
+					}
+					err = vr::VRDriverInput()->UpdateSkeletonComponent(m_rightHandHandler, vr::VRSkeletalMotionRange_WithoutController, msg->bonesRightHand, 31);
+					if (err != vr::VRInputError_None)
+					{
+						// Handle failure case
+						DriverLog("UpdateSkeletonComponent failed.  Error: %i\n", err);
+					}
+				}
+
 			}
 		}
-		*/
 
 		/* TODO: Update skeleton components */
 #endif
@@ -508,13 +500,13 @@ private:
 	vr::VRInputComponentHandle_t m_compC;
 	vr::VRInputComponentHandle_t m_compHaptic;
 
+	vr::VRInputComponentHandle_t m_leftHandHandler;
+	vr::VRInputComponentHandle_t m_rightHandHandler;
+
 	std::string m_sSerialNumber;
 	std::string m_sModelNumber;
 	
 	TrackerType m_type;
-
-	float m_leftHand[63];
-	float m_rightHand[63];
 
 	bool m_calibrationDone;
 	float m_calibrationPos[3];
@@ -581,7 +573,6 @@ void CServerDriver_Sample::Cleanup()
 
 void CServerDriver_Sample::RunFrame()
 {
-	if (g_handTracking.getState() == HandTrackingState::Unitialized) g_handTracking.InitializeDefaultSensor();
 	for (auto it = std::begin(m_pTrackers); it != std::end(m_pTrackers); ++it) {
 		(*it)->RunFrame();
 	}

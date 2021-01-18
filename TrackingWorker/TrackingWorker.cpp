@@ -4,12 +4,15 @@
 #include <iostream>
 
 #include "HandTracking.h"
+#include "BodyTracking.h"
 
 int main()
 {
-    CHandTracking* handTracking = new CHandTracking();
-
-    handTracking->InitializeDefaultSensor();
+    CHandTracking handTracking;
+    CBodyTracking bodyTrakcing;
+    handTracking.InitializeDefaultSensor();
+    bodyTrakcing.InitializeDefaultSensor();
+    while (true) Sleep(1000);
 }
 
 // Exécuter le programme : Ctrl+F5 ou menu Déboguer > Exécuter sans débogage

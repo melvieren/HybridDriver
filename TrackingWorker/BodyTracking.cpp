@@ -267,6 +267,10 @@ bool CBodyTracking::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies, B
                     hr = pBody->GetJoints(_countof(joints), joints);
                     if (SUCCEEDED(hr))
                     {
+                        JointOrientation jointOrientations[JointType_Count];
+                        pBody->GetJointOrientations(_countof(joints), jointOrientations);
+
+                        /* Update positions */
                         pMsg->WaistPos.X = joints[JointType_SpineBase].Position.X;
                         pMsg->WaistPos.Y = joints[JointType_SpineBase].Position.Y;
                         pMsg->WaistPos.Z = joints[JointType_SpineBase].Position.Z;
@@ -286,6 +290,44 @@ bool CBodyTracking::ProcessBody(INT64 nTime, int nBodyCount, IBody** ppBodies, B
                         pMsg->HandRightPos.X = joints[JointType_HandRight].Position.X;
                         pMsg->HandRightPos.Y = joints[JointType_HandRight].Position.Y;
                         pMsg->HandRightPos.Z = joints[JointType_HandRight].Position.Z;
+
+                        pMsg->HeadPos.X = joints[JointType_Head].Position.X;
+                        pMsg->HeadPos.Y = joints[JointType_Head].Position.Y;
+                        pMsg->HeadPos.Z = joints[JointType_Head].Position.Z;
+
+                        /* Update orientations */
+                        pMsg->WaistRot.X = jointOrientations[JointType_SpineBase].Orientation.x;
+                        pMsg->WaistRot.Y = jointOrientations[JointType_SpineBase].Orientation.y;
+                        pMsg->WaistRot.Z = jointOrientations[JointType_SpineBase].Orientation.z;
+                        pMsg->WaistRot.W = jointOrientations[JointType_SpineBase].Orientation.w;
+
+                        /* Feet # Ankles */
+                        pMsg->FootLeftRot.X = jointOrientations[JointType_AnkleLeft].Orientation.x;
+                        pMsg->FootLeftRot.Y = jointOrientations[JointType_AnkleLeft].Orientation.y;
+                        pMsg->FootLeftRot.Z = jointOrientations[JointType_AnkleLeft].Orientation.z;
+                        pMsg->FootLeftRot.W = jointOrientations[JointType_AnkleLeft].Orientation.w;
+
+                        pMsg->FootRightRot.X = jointOrientations[JointType_AnkleRight].Orientation.x;
+                        pMsg->FootRightRot.Y = jointOrientations[JointType_AnkleRight].Orientation.y;
+                        pMsg->FootRightRot.Z = jointOrientations[JointType_AnkleRight].Orientation.z;
+                        pMsg->FootRightRot.W = jointOrientations[JointType_AnkleRight].Orientation.w;
+
+                        /* Hands # Wrists */
+                        pMsg->HandLeftRot.X = jointOrientations[JointType_WristLeft].Orientation.x;
+                        pMsg->HandLeftRot.Y = jointOrientations[JointType_WristLeft].Orientation.y;
+                        pMsg->HandLeftRot.Z = jointOrientations[JointType_WristLeft].Orientation.z;
+                        pMsg->HandLeftRot.W = jointOrientations[JointType_WristLeft].Orientation.w;
+
+                        pMsg->HandRightRot.X = jointOrientations[JointType_WristRight].Orientation.x;
+                        pMsg->HandRightRot.Y = jointOrientations[JointType_WristRight].Orientation.y;
+                        pMsg->HandRightRot.Z = jointOrientations[JointType_WristRight].Orientation.z;
+                        pMsg->HandRightRot.W = jointOrientations[JointType_WristRight].Orientation.w;
+
+                        /* Neck # Head */
+                        pMsg->HeadRot.X = jointOrientations[JointType_Neck].Orientation.x;
+                        pMsg->HeadRot.Y = jointOrientations[JointType_Neck].Orientation.y;
+                        pMsg->HeadRot.Z = jointOrientations[JointType_Neck].Orientation.z;
+                        pMsg->HeadRot.W = jointOrientations[JointType_Neck].Orientation.w;
 
                         return true;
                     }

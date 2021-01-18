@@ -8,6 +8,7 @@ CONFIG_DIR = "C:\\Program Files (x86)\\Steam\\config\\"
 if len(sys.argv) > 1:
 	if sys.argv[1] == '-h':
 		print('usage: python install_overlay.py [EXE_PATH]')
+		exit()
 	EXE_PATH = sys.argv[1]
 
 vrmanifest = {
@@ -42,13 +43,13 @@ if appconfig == None:
 with open(CONFIG_DIR + 'hybridtracking.vrmanifest', 'w+') as fp:
 	fp.write(json.dumps(vrmanifest, sort_keys=True, indent=4))
 
-with open(CONFIG_DIR + 'vrappconfig\\hybridtracking.vrappconfig', 'w+') as fp:
+with open(CONFIG_DIR + 'vrappconfig\\hybridtracking.overlay.vrappconfig', 'w+') as fp:
 	fp.write(json.dumps(vrappconfig, sort_keys=True, indent=4))
 
 new_path = CONFIG_DIR + 'hybridtracking.vrmanifest'
 if not new_path in appconfig['manifest_paths']:
 	appconfig['manifest_paths'].append(CONFIG_DIR + 'hybridtracking.vrmanifest')
-	
+
 with open(CONFIG_DIR + 'appconfig.json', 'w+') as fp:
 	fp.write(json.dumps(appconfig, sort_keys=True, indent=4))
 

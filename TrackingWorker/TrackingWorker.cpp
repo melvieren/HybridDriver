@@ -47,12 +47,13 @@ int main()
         CloseHandle(g_hSharedMem);
         return 1;
     }
+
     CHandTracking handTracking;
     CBodyTracking bodyTracking;
     
     bodyTracking.SetEventMsgBuffer(&g_SharedBuf->bodyMsg);
 
-    handTracking.InitializeDefaultSensor();
+    //handTracking.InitializeDefaultSensor();
     bodyTracking.InitializeDefaultSensor();
 
     while (true) Sleep(1000);

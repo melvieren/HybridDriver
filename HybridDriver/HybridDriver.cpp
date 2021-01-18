@@ -39,20 +39,25 @@ using namespace vr;
 HANDLE g_hSharedMem = NULL;
 GlobalEventMsg_t* g_SharedBuf = NULL;
 
-void initSharedMemory(void)
+int initSharedMemory(void)
 {
+	DriverLog("Initializing SHM");
+
 	g_hSharedMem = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, szName);
 	if (g_hSharedMem == NULL)
 	{
-		return;
+		return 0;
 	}
 
 	g_SharedBuf = (GlobalEventMsg_t *)MapViewOfFile(g_hSharedMem, FILE_MAP_ALL_ACCESS, 0, 0, BUF_SIZE);
 	if (g_SharedBuf == NULL)
 	{
 		CloseHandle(g_hSharedMem);
-		return;
+		return 0;
 	}
+
+	DriverLog("Successfully initialized SHM ! g_SharedBuf at %p", g_SharedBuf);
+	return 1;
 }
 
 HmdVector3d_t MultiplyByQuaternion(HmdQuaternion_t quat, HmdVector3d_t vec) {
@@ -319,6 +324,12 @@ public:
 	{
 		DriverPose_t pose = { 0 };
 
+		if (g_SharedBuf == NULL && !initSharedMemory()) {
+			pose.poseIsValid = false;
+			pose.result = TrackingResult_Calibrating_InProgress;
+			return pose;
+		}
+
 		// if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) return GetHandPose();
 
 		if (!m_calibrationDone && !CalibrateJointPositions())
@@ -336,7 +347,7 @@ public:
 		pose.qDriverFromHeadRotation = HmdQuaternion_Init(1, 0, 0, 0);
 
 		// Retrieve actual joint positions from Kinect
-		BodyEventMsg_t* msg = &g_SharedBuf->bodyMsg;;
+		BodyEventMsg_t* msg = &g_SharedBuf->bodyMsg;
 
 		// Estimate joint positions in lighthouse coordinates
 		switch (m_type) {
@@ -544,7 +555,7 @@ EVRInitError CServerDriver_Sample::Init( vr::IVRDriverContext *pDriverContext )
 	DriverLog("Adding %d virtual trackers", TrackerType::TrackersCount);
 
 	for (int i = 0; i < static_cast<int>(TrackerType::TrackersCount); i++) {
-		/*if (static_cast<TrackerType>(i) == TrackerType::RightHand)
+		/*if (static_cast<TrackerType>(i) == TrackerType::RightHand || static_cast<TrackerType>(i) == TrackerType::LeftHand)
 			continue;*/
 		CSampleControllerDriver* tracker = new CSampleControllerDriver();
 		tracker->SetControllerType(static_cast<TrackerType>(i));

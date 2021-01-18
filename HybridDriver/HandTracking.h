@@ -60,6 +60,7 @@ public:
 
     vr::VRInputComponentHandle_t leftHandComponentHandler;
     vr::VRInputComponentHandle_t rightHandComponentHandler;
+    std::thread* m_initThread;
 
 private:
     void updateHandTracking();
@@ -68,6 +69,7 @@ private:
 
     int m_handCount;
     std::thread* m_gestureRecognition;
+    
     bool m_isDataAvailable;
     GestureResult* m_handtrackingPoints;
 

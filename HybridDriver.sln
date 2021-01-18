@@ -5,6 +5,8 @@ VisualStudioVersion = 16.0.30523.141
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "HybridDriver", "HybridDriver\HybridDriver.vcxproj", "{811671EF-AFAE-43CE-B62C-E60FC8C1590A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TrackingWorker", "TrackingWorker\TrackingWorker.vcxproj", "{6FF40277-35DA-423C-8089-85204FA3F45B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{811671EF-AFAE-43CE-B62C-E60FC8C1590A}.Release|x64.Build.0 = Release|x64
 		{811671EF-AFAE-43CE-B62C-E60FC8C1590A}.Release|x86.ActiveCfg = Release|Win32
 		{811671EF-AFAE-43CE-B62C-E60FC8C1590A}.Release|x86.Build.0 = Release|Win32
+		{6FF40277-35DA-423C-8089-85204FA3F45B}.Debug|x64.ActiveCfg = Debug|x64
+		{6FF40277-35DA-423C-8089-85204FA3F45B}.Debug|x64.Build.0 = Debug|x64
+		{6FF40277-35DA-423C-8089-85204FA3F45B}.Debug|x86.ActiveCfg = Debug|Win32
+		{6FF40277-35DA-423C-8089-85204FA3F45B}.Debug|x86.Build.0 = Debug|Win32
+		{6FF40277-35DA-423C-8089-85204FA3F45B}.Release|x64.ActiveCfg = Release|x64
+		{6FF40277-35DA-423C-8089-85204FA3F45B}.Release|x64.Build.0 = Release|x64
+		{6FF40277-35DA-423C-8089-85204FA3F45B}.Release|x86.ActiveCfg = Release|Win32
+		{6FF40277-35DA-423C-8089-85204FA3F45B}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

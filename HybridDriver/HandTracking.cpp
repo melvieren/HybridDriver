@@ -1,4 +1,5 @@
 #include <thread>
+#include <iostream>
 
 #include "driverlog.h"
 #include "interface_gesture.hpp"
@@ -53,40 +54,43 @@ m_isDataAvailable(false),
 m_handCount(0),
 m_stop(false),
 m_gestureRecognition(NULL),
+m_initThread(NULL),
 m_state(HandTrackingState::Unitialized)
 {
 
 }
 
 CHandTracking::~CHandTracking() {
-	DriverLog(" HandTracking | Destructing HandTracking structure");
+	std::cout << " HandTracking | Destructing HandTracking structure" << std::endl;
 	m_stop = true;
 	if (m_gestureRecognition != NULL) m_gestureRecognition->join();
 	StopGestureDetection();
+	std::cout << " HandTracking | Stopped gesture detection" << std::endl;
 }
 
 void CHandTracking::InitializeDefaultSensor() {
 	m_state = HandTrackingState::Initializing;
-	std::thread* init_thread = new std::thread(&CHandTracking::initialize, this);
-}
-
-void CHandTracking::initialize() {
 	GestureOption option;
-	option.maxFPS = 60;
-	//option.mode = GestureMode3DPoint;
+	// option.maxFPS = 60;
+	// option.mode = GestureMode3DPoint;
 	UseExternalTransform(true);
 	GestureFailure result = StartGestureDetection(&option);
 	if (result != GestureFailureNone) {
-		DriverLog(" HandTracking | Initilization of HandTracking failed");
+		std::cout << " HandTracking | Initilization of HandTracking failed" << std::endl;
 		m_state = HandTrackingState::Error;
+		StopGestureDetection();
 		return;
 	}
 
 	m_gestureRecognition = new std::thread(&CHandTracking::updateHandTracking, this);
 
-	DriverLog(" HandTracking | Initilization of HandTracking successful");
+	std::cout << " HandTracking | Initilization of HandTracking successful" << std::endl;
 	m_state = HandTrackingState::Initialized;
 	return;
+}
+
+void CHandTracking::initialize() {
+	
 }
 
 bool CHandTracking::isDataAvailable() {
@@ -104,8 +108,6 @@ void CHandTracking::updateHandTracking() {
 	while (!m_stop) {
 		int frameIndex = -1;
 		m_handCount = GetGestureResult((const GestureResult**)&m_handtrackingPoints, &frameIndex);
-		m_handtrackingPoints->isLeft;
-		m_handtrackingPoints->points;
 		using namespace std::chrono_literals;
 		std::this_thread::sleep_for(500ns);
 		if (frameIndex < 0) {
@@ -117,7 +119,7 @@ void CHandTracking::updateHandTracking() {
 		if (m_handCount > 0) m_isDataAvailable = true;
 		lastFrameIndex = frameIndex;
 	}
-	DriverLog(" HandTracking | Updated thread ended");
+	std::cout << " HandTracking | Updated thread ended" << std::endl;
 }
 
 void vector3to4(vr::HmdVector4_t * out, vr::HmdVector3_t v) {
@@ -136,7 +138,6 @@ void assignBone(vr::VRBoneTransform_t* bone, int point_one, int point_two, int f
 	vector3to4(&bone->position, vectors[point_one]);
 	quaternionFromTwoVectors(&bone->orientation, &vectors[fake_orientation_point], &vectors[point_two]);
 }
-
 
 void CHandTracking::getRightHandBones(vr::VRBoneTransform_t* bones, float points[]) {
 	vr::HmdVector3_t vectors[21];

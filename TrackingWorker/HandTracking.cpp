@@ -6,12 +6,23 @@
 #include "HandTracking.h"
 #include "Bridge.h"
 
-inline float dotProduct(vr::HmdVector3_t v[], vr::HmdVector3_t u[])
+inline float vectorLength(vr::HmdVector3_t* v) {
+	return sqrt(v->v[0] * v->v[0] + v->v[1] * v->v[1] + v->v[2] * v->v[2]);
+}
+
+inline float dotProduct(vr::HmdVector3_t * in_1, vr::HmdVector3_t * in_2)
 {
+	vr::HmdVector3_t v, u;
+	float v_mag = vectorLength(in_1);
+	float u_mag = vectorLength(in_2);
+	for (int i = 0; i < 3; i++) {
+		v.v[i] = in_1->v[i] / v_mag;
+		u.v[i] = in_2->v[i] / u_mag;
+	}
 	int product = 0.0f;
 	// Loop for calculate cot product 
 	for (int i = 0; i < 3; i++)
-		product += v->v[i] * u->v[i];
+		product += v.v[i] * u.v[i];
 
 	return product;
 }
@@ -25,28 +36,29 @@ inline void crossProduct(vr::HmdVector3_t* out, vr::HmdVector3_t* v, vr::HmdVect
 	out->v[2] = v->v[0] * u->v[1] - v->v[1] * u->v[0];
 }
 
-inline float vectorLength(vr::HmdVector3_t* v) {
-	return sqrt(v->v[0] * v->v[0] + v->v[1] * v->v[1] + v->v[2] * v->v[2]);
-}
-
 inline void quaternionFromTwoVectors(vr::HmdQuaternionf_t* out, vr::HmdVector3_t v[], vr::HmdVector3_t u[]) {
 	vr::HmdQuaternionf_t q;
 	vr::HmdVector3_t a;
 	crossProduct(&a, v, u);
-	out->x = a.v[0];
-	out->y = a.v[1];
-	out->z = a.v[2];
+	q.x = a.v[0];
+	q.y = a.v[1];
+	q.z = a.v[2];
 	float dotP = dotProduct(u, v);
 	if (dotP > 0.999999) { // Handling parallel vectors
-		out->x = 0.0f;
-		out->y = 0.0f;
-		out->z = 0.0f;
-		out->w = 1.0f;
+		q.x = 0.0f;
+		q.y = 0.0f;
+		q.z = 0.0f;
+		q.w = 1.0f;
 	}
 	float v_length = vectorLength(v);
 	float u_length = vectorLength(u);
 	//Todo: Handle opposite vectors
-	out->w = sqrt(v_length * v_length * u_length * u_length) + dotP;
+	q.w = sqrt(v_length * v_length * u_length * u_length) + dotP;
+	float q_length = sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+	out->x = q.x / q_length;
+	out->y = q.y / q_length;
+	out->z = q.z / q_length;
+	out->w = q.w / q_length;
 }
 
 CHandTracking::CHandTracking() :
@@ -170,12 +182,16 @@ void vector3to4(vr::HmdVector4_t* out, vr::HmdVector3_t v) {
 }
 
 void assignBone(vr::VRBoneTransform_t* bone, int point_one, int point_two, vr::HmdVector3_t* vectors) {
-	vector3to4(&bone->position, vectors[point_one]);
+	vr::HmdVector3_t new_point;
+	for (int i = 0; i < 3; i++) new_point.v[i] = vectors[point_two].v[i] - vectors[point_one].v[i];
+	vector3to4(&bone->position, new_point);
 	quaternionFromTwoVectors(&bone->orientation, &vectors[point_one], &vectors[point_two]);
 }
 
 void assignBone(vr::VRBoneTransform_t* bone, int point_one, int point_two, int fake_orientation_point, vr::HmdVector3_t* vectors) {
-	vector3to4(&bone->position, vectors[point_one]);
+	vr::HmdVector3_t new_point;
+	for (int i = 0; i < 3; i++) new_point.v[i] = vectors[point_two].v[i] - vectors[point_one].v[i];
+	vector3to4(&bone->position, new_point);
 	quaternionFromTwoVectors(&bone->orientation, &vectors[fake_orientation_point], &vectors[point_two]);
 }
 
@@ -195,9 +211,9 @@ void CHandTracking::updateRightHandBones() {
 		for (int i = 0; i < 31; i++) {
 			switch (i) {
 			case HandSkeletonBone::eBone_Root:
-				assignBone(&bones[i], PointNaming::Base, PointNaming::Middle0, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Middle0, vectors); break;
 			case HandSkeletonBone::eBone_Wrist:
-				assignBone(&bones[i], PointNaming::Base, PointNaming::Middle0, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Middle0, vectors); break;
 			case HandSkeletonBone::eBone_Thumb0:
 				assignBone(&bones[i], PointNaming::Base, PointNaming::Thumb0, vectors); break;
 			case HandSkeletonBone::eBone_Thumb1:

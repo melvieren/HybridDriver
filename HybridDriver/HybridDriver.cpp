@@ -261,16 +261,16 @@ public:
 		if ((hmdPos.v[0] == 0.0 && hmdPos.v[1] == 0.0 && hmdPos.v[2] == 0.0) || (kinectHeadPos[0] == 0.0 && kinectHeadPos[1] == 0.0 && kinectHeadPos[2] == 0.0))
 			return false;
 
-		DriverLog("Calibration data:\n"\
+	/*	DriverLog("Calibration data:\n"\
 			"\tLighthouse position: (%f, %f, %f)\n"\
 			"\tKinect position: (%f, %f, %f)",
 			hmdPos.v[0], hmdPos.v[1], hmdPos.v[2],
-			kinectHeadPos[0], kinectHeadPos[1], kinectHeadPos[2]);
+			kinectHeadPos[0], kinectHeadPos[1], kinectHeadPos[2]);*/
 
 		for (int i = 0; i < 3; i++)
 			m_calibrationPos[i] = hmdPos.v[i] - kinectHeadPos[i];
 
-		DriverLog("Computed calibration vector: (%f, %f, %f)", m_calibrationPos[0], m_calibrationPos[1], m_calibrationPos[2]);
+		//DriverLog("Computed calibration vector: (%f, %f, %f)", m_calibrationPos[0], m_calibrationPos[1], m_calibrationPos[2]);
 
 		m_calibrationDone = true;
 		return m_calibrationDone;
@@ -335,7 +335,8 @@ public:
 				return handPose;
 		}
 
-		if (!m_calibrationDone && !CalibrateJointPositions())
+		//if (!m_calibrationDone && !CalibrateJointPositions())
+		if (!CalibrateJointPositions())
 		{
 			pose.poseIsValid = false;
 			pose.result = TrackingResult_Calibrating_InProgress;
@@ -392,23 +393,7 @@ public:
 		TrackedDevicePose_t hmd_tracker;
 		VRServerDriverHost()->GetRawTrackedDevicePoses(0, &hmd_tracker, 1);
 
-		vr::HmdVector3d_t handPos;
-		handPos.v[0] = pose.vecPosition[0];
-		handPos.v[1] = pose.vecPosition[1];
-		handPos.v[2] = pose.vecPosition[2];
 		HmdQuaternion_t hmdQuaternion = GetHMDRotation(hmd_tracker.mDeviceToAbsoluteTracking);
-		handPos = MultiplyByQuaternion(hmdQuaternion, handPos);
-
-		// Get vec3 from matrix34
-		vr::HmdVector3_t hmdPos;
-		hmdPos.v[0] = hmd_tracker.mDeviceToAbsoluteTracking.m[0][3];
-		hmdPos.v[1] = hmd_tracker.mDeviceToAbsoluteTracking.m[1][3];
-		hmdPos.v[2] = hmd_tracker.mDeviceToAbsoluteTracking.m[2][3];
-
-		pose.vecPosition[0] = hmdPos.v[0] + static_cast<double>(handPos.v[0]);
-		pose.vecPosition[1] = hmdPos.v[1] + static_cast<double>(handPos.v[1]);
-		pose.vecPosition[2] = hmdPos.v[2] + static_cast<double>(handPos.v[2]);
-
 		pose.qRotation = hmdQuaternion;
 
 		/*

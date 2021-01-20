@@ -280,7 +280,7 @@ public:
 		DriverPose_t pose = { 0 };
 		HandEventMsg_t* msg = &g_SharedBuf->handMsg;
 
-		if (msg->state != HandTrackingState::Initialized)
+		if (msg->state != HandTrackingState::Initialized) //TODO: Also check if we can see the hand we are looking for
 		{
 			pose.poseIsValid = false;
 			pose.result = TrackingResult_Calibrating_InProgress;
@@ -329,7 +329,11 @@ public:
 			return pose;
 		}
 
-		if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) return GetHandPose();
+		if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) {
+			DriverPose_t handPose = GetHandPose();
+			if (handPose.poseIsValid)
+				return handPose;
+		}
 
 		if (!m_calibrationDone && !CalibrateJointPositions())
 		{

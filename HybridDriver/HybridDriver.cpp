@@ -279,7 +279,7 @@ public:
 		DriverPose_t pose = { 0 };
 		HandEventMsg_t* msg = &g_SharedBuf->handMsg;
 
-		if (msg->state != HandTrackingState::Initialized) //TODO: Also check if we can see the hand we are looking for
+		if (msg->state != (int)HandTrackingState::Initialized) //TODO: Also check if we can see the hand we are looking for
 		{
 			pose.poseIsValid = false;
 			pose.result = TrackingResult_Calibrating_InProgress;
@@ -327,11 +327,14 @@ public:
 			pose.result = TrackingResult_Calibrating_InProgress;
 			return pose;
 		}
-
-		if (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand) {
-			DriverPose_t handPose = GetHandPose();
-			if (handPose.poseIsValid)
-				return handPose;
+		HandEventMsg_t* handMsg = &g_SharedBuf->handMsg;
+		if (handMsg->state == (int)HandTrackingState::Initialized && (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand)) {
+			if ((m_type == TrackerType::LeftHand && handMsg->leftHandDetected) || (m_type == TrackerType::RightHand && handMsg->rightHandDetected)) {
+				DriverPose_t handPose = GetHandPose();
+				if (handPose.poseIsValid)
+						return handPose;
+			}
+			
 		}
 
 		//if (!m_calibrationDone && !CalibrateJointPositions())
@@ -434,7 +437,7 @@ public:
 
 		if (g_SharedBuf != NULL && (m_type == TrackerType::LeftHand || m_type == TrackerType::RightHand)) {
 			HandEventMsg_t* msg = &g_SharedBuf->handMsg;
-			if (msg->state == HandTrackingState::Initialized)
+			if (msg->state == (int)HandTrackingState::Initialized)
 			{
 				if (m_type == TrackerType::LeftHand) {
 					vr::VRDriverInput()->UpdateBooleanComponent(m_compA, msg->leftHandGesture == GestureTypeOK, 0);

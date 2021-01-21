@@ -42,6 +42,8 @@ typedef struct {
 	uint32_t state;
 	GestureType leftHandGesture;
 	GestureType rightHandGesture;
+	bool leftHandDetected;
+	bool rightHandDetected;
 } HandEventMsg_t;
 
 typedef struct {

@@ -97,7 +97,6 @@ private:
     bool m_rightHandBonesNeedUpdate;
 
 
-
 };
 
 enum PointNaming

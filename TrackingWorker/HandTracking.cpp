@@ -161,6 +161,8 @@ void CHandTracking::updateHandTracking() {
 			//std::cout << "Found " << m_handCount << " hand(s) " << std::endl;
 			m_isDataAvailable = true;
 		}
+		bool leftHandDetected = false;
+		bool rightHandDetected = false;
 		for (int i = 0; i < m_handCount; i++) {
 			if (m_handtrackingPoints[i].isLeft) {
 				m_pMsg->leftHandGesture = m_handtrackingPoints[i].gesture;
@@ -168,6 +170,7 @@ void CHandTracking::updateHandTracking() {
 				m_pMsg->LeftHandPos.Y = m_handtrackingPoints[i].points[1];
 				m_pMsg->LeftHandPos.Z = m_handtrackingPoints[i].points[2];
 				m_leftHandBonesNeedUpdate = true;
+				leftHandDetected = true;
 			}
 			else {
 				m_pMsg->rightHandGesture = m_handtrackingPoints[i].gesture;
@@ -175,8 +178,11 @@ void CHandTracking::updateHandTracking() {
 				m_pMsg->RightHandPos.Y = m_handtrackingPoints[i].points[1];
 				m_pMsg->RightHandPos.Z = m_handtrackingPoints[i].points[2];
 				m_rightHandBonesNeedUpdate = true;
+				rightHandDetected = true;
 			}
 		}
+		m_pMsg->leftHandDetected = leftHandDetected;
+		m_pMsg->rightHandDetected = rightHandDetected;
 		lastFrameIndex = frameIndex;
 	}
 }
@@ -280,6 +286,7 @@ void CHandTracking::updateRightHandBones() {
 			case HandSkeletonBone::eBone_Aux_PinkyFinger:
 				assignBone(&bones[i], PointNaming::Base, PointNaming::Pinky3, vectors); break;
 			}
+
 		}
 
 		m_rightHandBonesNeedUpdate = false;
@@ -295,7 +302,7 @@ void CHandTracking::updateLeftHandBones() {
 		else memcpy(points, m_handtrackingPoints[1].points, sizeof(float) * 63);
 		vr::HmdVector3_t vectors[21];
 		for (int i = 0; i < 21; i++) {
-			vectors[i].v[0] = points[i * 3] - points[0];
+			vectors[i].v[0] = -points[i * 3] - points[0];
 			vectors[i].v[1] = points[i * 3 + 1] - points[1];
 			vectors[i].v[2] = -points[i * 3 + 2] - points[2];
 		}

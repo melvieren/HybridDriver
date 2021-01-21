@@ -72,6 +72,7 @@ private:
     void updateHandTracking();
 
     void updateRightHandBones();
+    void updateLeftHandBones();
 
     void initialize();
 

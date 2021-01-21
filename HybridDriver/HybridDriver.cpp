@@ -192,15 +192,14 @@ public:
 			vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/b/click", &m_compB);
 			vr::VRDriverInput()->CreateBooleanComponent(m_ulPropertyContainer, "/input/c/click", &m_compC);
 
-			if (m_type == TrackerType::RightHand) {
-				vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_RightHand);
-				vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "{HybridDriver}/rendermodels/right_hand_test");
-
-				vr::VRDriverInput()->CreateSkeletonComponent(m_ulPropertyContainer, "/input/skeleton/right", "/skeleton/hand/right", "/pose/raw", EVRSkeletalTrackingLevel::VRSkeletalTracking_Full, NULL, 31, &m_rightHandHandler);
-			} else if (m_type == TrackerType::LeftHand) {
-				vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_LeftHand);
-			}
-		} else {
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_TrackingSystemName_String, "VR Controller");
+			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "{HybridDriver}/rendermodels/right_hand_test");
+			if(m_type == TrackerType::LeftHand)
+				vr::EVRInputError err = vr::VRDriverInput()->CreateSkeletonComponent(m_ulPropertyContainer, "/input/skeleton/left", "/skeleton/hand/left", "/pose/raw", EVRSkeletalTrackingLevel::VRSkeletalTracking_Full, NULL, 31, &m_leftHandHandler);
+			else 
+				vr::EVRInputError err = vr::VRDriverInput()->CreateSkeletonComponent(m_ulPropertyContainer, "/input/skeleton/right", "/skeleton/hand/right", "/pose/raw", EVRSkeletalTrackingLevel::VRSkeletalTracking_Full, NULL, 31, &m_rightHandHandler);
+		}
+		else {
 			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_DeviceClass_Int32, TrackedDeviceClass_GenericTracker);
 			vr::VRProperties()->SetInt32Property(m_ulPropertyContainer, Prop_ControllerRoleHint_Int32, TrackedControllerRole_OptOut);
 			vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, vr::Prop_RenderModelName_String, "arrow");
@@ -438,7 +437,21 @@ public:
 			if (msg->state == HandTrackingState::Initialized)
 			{
 				if (m_type == TrackerType::LeftHand) {
-					//Todo: handle left hand
+					vr::VRDriverInput()->UpdateBooleanComponent(m_compA, msg->leftHandGesture == GestureTypeOK, 0);
+					vr::VRDriverInput()->UpdateBooleanComponent(m_compB, msg->leftHandGesture == GestureTypeVictory, 0);
+					vr::VRDriverInput()->UpdateBooleanComponent(m_compC, msg->leftHandGesture == GestureTypeFist, 0);
+					vr::EVRInputError err = vr::VRDriverInput()->UpdateSkeletonComponent(m_leftHandHandler, vr::VRSkeletalMotionRange_WithController, msg->bonesLeftHand, 31);
+					if (err != vr::VRInputError_None)
+					{
+						// Handle failure case
+						DriverLog("UpdateSkeletonComponent failed.  Error: %i\n", err);
+					}
+					err = vr::VRDriverInput()->UpdateSkeletonComponent(m_leftHandHandler, vr::VRSkeletalMotionRange_WithoutController, msg->bonesLeftHand, 31);
+					if (err != vr::VRInputError_None)
+					{
+						// Handle failure case
+						DriverLog("UpdateSkeletonComponent failed.  Error: %i\n", err);
+					}
 				}
 				else if (m_type == TrackerType::RightHand) {
 					vr::VRDriverInput()->UpdateBooleanComponent(m_compA, msg->rightHandGesture == GestureTypeOK, 0);

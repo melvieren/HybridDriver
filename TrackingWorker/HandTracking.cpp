@@ -194,18 +194,21 @@ void vector3to4(vr::HmdVector4_t* out, vr::HmdVector3_t v) {
 	out->v[3] = 1.0f;
 }
 
-void assignBone(vr::VRBoneTransform_t* bone, int point_one, int point_two, vr::HmdVector3_t* vectors) {
+void assignBone(vr::VRBoneTransform_t* bone, int previous_point, int current_point, int next_point, vr::HmdVector3_t* vectors) {
 	vr::HmdVector3_t new_point;
-	for (int i = 0; i < 3; i++) new_point.v[i] = vectors[point_two].v[i] - vectors[point_one].v[i];
+	for (int i = 0; i < 3; i++) new_point.v[i] = vectors[current_point].v[i] - vectors[previous_point].v[i];
 	vector3to4(&bone->position, new_point);
-	quaternionFromTwoVectors(&bone->orientation, &vectors[point_two], &vectors[point_one]);
+	quaternionFromTwoVectors(&bone->orientation, &vectors[next_point], &vectors[current_point]);
 }
 
-void assignBone(vr::VRBoneTransform_t* bone, int point_one, int point_two, int fake_orientation_point, vr::HmdVector3_t* vectors) {
+void assignBone(vr::VRBoneTransform_t* bone, int previous_point, int current_point, bool tip, vr::HmdVector3_t* vectors) {
 	vr::HmdVector3_t new_point;
-	for (int i = 0; i < 3; i++) new_point.v[i] = vectors[point_two].v[i] - vectors[point_one].v[i];
+	for (int i = 0; i < 3; i++) new_point.v[i] = vectors[current_point].v[i] - vectors[previous_point].v[i];
 	vector3to4(&bone->position, new_point);
-	quaternionFromTwoVectors(&bone->orientation, &vectors[fake_orientation_point], &vectors[point_two]);
+	bone->orientation.w = 1.0f;
+	bone->orientation.x = 0.0f;
+	bone->orientation.y = 0.0f;
+	bone->orientation.z = 0.0f;
 }
 
 void CHandTracking::updateRightHandBones() {
@@ -224,67 +227,67 @@ void CHandTracking::updateRightHandBones() {
 		for (int i = 0; i < 31; i++) {
 			switch (i) {
 			case HandSkeletonBone::eBone_Root:
-				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Middle0, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Middle2, vectors); break;
 			case HandSkeletonBone::eBone_Wrist:
-				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Middle0, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Middle2, vectors); break;
 			case HandSkeletonBone::eBone_Thumb0:
-				assignBone(&bones[i], PointNaming::Base, PointNaming::Thumb0, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Thumb0, vectors); break;
 			case HandSkeletonBone::eBone_Thumb1:
-				assignBone(&bones[i], PointNaming::Thumb0, PointNaming::Thumb1, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Thumb0, PointNaming::Thumb1, vectors); break;
 			case HandSkeletonBone::eBone_Thumb2:
-				assignBone(&bones[i], PointNaming::Thumb1, PointNaming::Thumb2, vectors); break;
+				assignBone(&bones[i], PointNaming::Thumb0, PointNaming::Thumb1, PointNaming::Thumb2, vectors); break;
 			case HandSkeletonBone::eBone_Thumb3:
-				assignBone(&bones[i], PointNaming::Thumb2, PointNaming::Thumb3, vectors); break;
+				assignBone(&bones[i], PointNaming::Thumb1, PointNaming::Thumb2, PointNaming::Thumb3, vectors); break;
 			case HandSkeletonBone::eBone_IndexFinger0:
-				assignBone(&bones[i], PointNaming::Base, PointNaming::Index0, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Index0, vectors); break;
 			case HandSkeletonBone::eBone_IndexFinger1:
-				assignBone(&bones[i], PointNaming::Index0, PointNaming::Index1, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Index0, PointNaming::Index1, vectors); break;
 			case HandSkeletonBone::eBone_IndexFinger2:
-				assignBone(&bones[i], PointNaming::Index1, PointNaming::Index2, vectors); break;
+				assignBone(&bones[i], PointNaming::Index0, PointNaming::Index1, PointNaming::Index2, vectors); break;
 			case HandSkeletonBone::eBone_IndexFinger3:
-				assignBone(&bones[i], PointNaming::Index2, PointNaming::Index3, vectors); break;
+				assignBone(&bones[i], PointNaming::Index1, PointNaming::Index2, PointNaming::Index3, vectors); break;
 			case HandSkeletonBone::eBone_IndexFinger4:
-				assignBone(&bones[i], PointNaming::Index3, PointNaming::Index3, PointNaming::Index2, vectors); break;
+				assignBone(&bones[i], PointNaming::Index2, PointNaming::Index3, true, vectors); break;
 			case HandSkeletonBone::eBone_MiddleFinger0:
-				assignBone(&bones[i], PointNaming::Base, PointNaming::Middle0, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Middle0, vectors); break;
 			case HandSkeletonBone::eBone_MiddleFinger1:
-				assignBone(&bones[i], PointNaming::Middle0, PointNaming::Middle1, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Middle0, PointNaming::Middle1, vectors); break;
 			case HandSkeletonBone::eBone_MiddleFinger2:
-				assignBone(&bones[i], PointNaming::Middle1, PointNaming::Middle2, vectors); break;
+				assignBone(&bones[i], PointNaming::Middle0, PointNaming::Middle1, PointNaming::Middle2, vectors); break;
 			case HandSkeletonBone::eBone_MiddleFinger3:
-				assignBone(&bones[i], PointNaming::Middle2, PointNaming::Middle3, vectors); break;
+				assignBone(&bones[i], PointNaming::Middle1, PointNaming::Middle2, PointNaming::Middle3, vectors); break;
 			case HandSkeletonBone::eBone_MiddleFinger4:
-				assignBone(&bones[i], PointNaming::Middle3, PointNaming::Middle3, PointNaming::Middle2, vectors); break;
+				assignBone(&bones[i], PointNaming::Middle2, PointNaming::Middle3, true, vectors); break;
 			case HandSkeletonBone::eBone_RingFinger0:
-				assignBone(&bones[i], PointNaming::Base, PointNaming::Ring0, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Ring0, vectors); break;
 			case HandSkeletonBone::eBone_RingFinger1:
-				assignBone(&bones[i], PointNaming::Ring0, PointNaming::Ring1, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Ring0, PointNaming::Ring1, vectors); break;
 			case HandSkeletonBone::eBone_RingFinger2:
-				assignBone(&bones[i], PointNaming::Ring1, PointNaming::Ring2, vectors); break;
+				assignBone(&bones[i], PointNaming::Ring0, PointNaming::Ring1, PointNaming::Ring2, vectors); break;
 			case HandSkeletonBone::eBone_RingFinger3:
-				assignBone(&bones[i], PointNaming::Ring2, PointNaming::Ring3, vectors); break;
+				assignBone(&bones[i], PointNaming::Ring1, PointNaming::Ring2, PointNaming::Ring3, vectors); break;
 			case HandSkeletonBone::eBone_RingFinger4:
-				assignBone(&bones[i], PointNaming::Ring3, PointNaming::Ring3, PointNaming::Ring2, vectors); break;
+				assignBone(&bones[i], PointNaming::Ring2, PointNaming::Ring3, true, vectors); break;
 			case HandSkeletonBone::eBone_PinkyFinger0:
-				assignBone(&bones[i], PointNaming::Base, PointNaming::Pinky0, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Pinky0, vectors); break;
 			case HandSkeletonBone::eBone_PinkyFinger1:
-				assignBone(&bones[i], PointNaming::Pinky0, PointNaming::Pinky1, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Pinky0, PointNaming::Pinky1, vectors); break;
 			case HandSkeletonBone::eBone_PinkyFinger2:
-				assignBone(&bones[i], PointNaming::Pinky1, PointNaming::Pinky2, vectors); break;
+				assignBone(&bones[i], PointNaming::Pinky0, PointNaming::Pinky1, PointNaming::Pinky2, vectors); break;
 			case HandSkeletonBone::eBone_PinkyFinger3:
-				assignBone(&bones[i], PointNaming::Pinky2, PointNaming::Pinky3, vectors); break;
+				assignBone(&bones[i], PointNaming::Pinky1, PointNaming::Pinky2, PointNaming::Pinky3, vectors); break;
 			case HandSkeletonBone::eBone_PinkyFinger4:
-				assignBone(&bones[i], PointNaming::Pinky3, PointNaming::Pinky3, PointNaming::Pinky2, vectors); break;
+				assignBone(&bones[i], PointNaming::Pinky2, PointNaming::Pinky3, true, vectors); break;
 			case HandSkeletonBone::eBone_Aux_Thumb:
-				assignBone(&bones[i], PointNaming::Base, PointNaming::Thumb3, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Thumb3, vectors); break;
 			case HandSkeletonBone::eBone_Aux_IndexFinger:
-				assignBone(&bones[i], PointNaming::Base, PointNaming::Index3, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Index3, vectors); break;
 			case HandSkeletonBone::eBone_Aux_MiddleFinger:
-				assignBone(&bones[i], PointNaming::Base, PointNaming::Middle3, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Middle3, vectors); break;
 			case HandSkeletonBone::eBone_Aux_RingFinger:
-				assignBone(&bones[i], PointNaming::Base, PointNaming::Ring3, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Ring3, vectors); break;
 			case HandSkeletonBone::eBone_Aux_PinkyFinger:
-				assignBone(&bones[i], PointNaming::Base, PointNaming::Pinky3, vectors); break;
+				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Pinky3, vectors); break;
 			}
 
 		}
@@ -306,7 +309,7 @@ void CHandTracking::updateLeftHandBones() {
 			vectors[i].v[1] = points[i * 3 + 1] - points[1];
 			vectors[i].v[2] = -points[i * 3 + 2] - points[2];
 		}
-		for (int i = 0; i < 31; i++) {
+		/*for (int i = 0; i < 31; i++) {
 			switch (i) {
 			case HandSkeletonBone::eBone_Root:
 				assignBone(&bones[i], PointNaming::Base, PointNaming::Base, PointNaming::Middle0, vectors); break;
@@ -371,7 +374,7 @@ void CHandTracking::updateLeftHandBones() {
 			case HandSkeletonBone::eBone_Aux_PinkyFinger:
 				assignBone(&bones[i], PointNaming::Base, PointNaming::Pinky3, vectors); break;
 			}
-		}
+		}*/
 
 		m_leftHandBonesNeedUpdate = false;
 	}
